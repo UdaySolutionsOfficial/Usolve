@@ -90,10 +90,17 @@ export const ContactPage: React.FC = () => {
       return;
     }
 
+    const endpoint = import.meta.env.VITE_CONTACT_FORM_ENDPOINT?.trim();
+    if (!endpoint) {
+      setStatus('error');
+      setErrorMessage(
+        'The contact form endpoint is not currently configured. Please send your inquiry directly using the email button below.'
+      );
+      return;
+    }
+
     setStatus('submitting');
     setErrorMessage('');
-
-    const endpoint = import.meta.env.VITE_CONTACT_FORM_ENDPOINT || '/api/contact';
 
     try {
       const response = await fetch(endpoint, {
@@ -103,9 +110,9 @@ export const ContactPage: React.FC = () => {
           Accept: 'application/json',
         },
         body: JSON.stringify({
-          fullName: formData.fullName.trim(),
+          name: formData.fullName.trim(),
           email: formData.email.trim(),
-          serviceType: formData.serviceType,
+          service: formData.serviceType,
           message: formData.message.trim(),
           _gotcha: formData._gotcha,
         }),
@@ -116,17 +123,29 @@ export const ContactPage: React.FC = () => {
         setDeliveryTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       } else {
         const errorData = await response.json().catch(() => null);
+        let errorText =
+          'We were unable to deliver your message through the automated gateway. Please use our direct email link below.';
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          errorText =
+            errorData.errors
+              .map((err: { field?: string; message?: string }) => err.message || err.field)
+              .filter(Boolean)
+              .join(', ') || errorText;
+        } else if (errorData?.error) {
+          errorText = errorData.error;
+        } else if (errorData?.message) {
+          errorText = errorData.message;
+        }
+
         setStatus('error');
-        setErrorMessage(
-          errorData?.message ||
-            'We were unable to deliver your message through the automated gateway. Please use our direct email link below.'
-        );
+        setErrorMessage(errorText);
       }
     } catch {
       // Network or configuration failure: honest error reporting
       setStatus('error');
       setErrorMessage(
-        'Delivery endpoint is currently unreachable or awaiting hosting configuration. Please use the direct email button below to send your inquiry without losing any information.'
+        'Delivery endpoint is currently unreachable. Please use the direct email button below to send your inquiry without losing any information.'
       );
     }
   };
@@ -351,6 +370,7 @@ export const ContactPage: React.FC = () => {
                       <input
                         type="text"
                         id="fullName"
+                        name="name"
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         placeholder="e.g. Rahul Sharma"
@@ -376,6 +396,7 @@ export const ContactPage: React.FC = () => {
                       <input
                         type="email"
                         id="email"
+                        name="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="e.g. rahul@example.com"
@@ -400,6 +421,7 @@ export const ContactPage: React.FC = () => {
                       </label>
                       <select
                         id="serviceType"
+                        name="service"
                         value={formData.serviceType}
                         onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
                         disabled={status === 'submitting'}
@@ -427,6 +449,7 @@ export const ContactPage: React.FC = () => {
                       </label>
                       <textarea
                         id="message"
+                        name="message"
                         rows={5}
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}

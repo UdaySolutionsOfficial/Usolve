@@ -17,33 +17,42 @@ Recommended hosting platforms:
 
 ## 2. Setting Up Contact Form Delivery
 
-Inquiries should reach: **`usolveofficial@gmail.com`**.
+Inquiries are delivered directly to: **`usolveofficial@gmail.com`**.
 
-Choose one of two straightforward options:
+### Active Integration: Hosted Form Service (Formspree)
+The website is pre-configured to use the official USolve Formspree form:
+- **Endpoint**: `https://formspree.io/f/mjyyyojn`
+- **Destination Inbox**: `usolveofficial@gmail.com`
+- **Environment Variable**: `VITE_CONTACT_FORM_ENDPOINT=https://formspree.io/f/mjyyyojn`
 
-### Option A: Hosted Form Service (Easiest — Formspree)
-1. Sign up for free at [Formspree.io](https://formspree.io/).
-2. Create a new form titled **USolve Inquiries** and set target email to `usolveofficial@gmail.com`.
-3. Copy your Form ID (e.g., `https://formspree.io/f/mqkvojzb`).
-4. In your hosting platform's environment variables (or `.env.local`), set:
-   ```env
-   VITE_CONTACT_FORM_ENDPOINT=https://formspree.io/f/YOUR_FORM_ID
-   ```
-5. Trigger a deployment. Submissions from `/contact` will instantly be routed to `usolveofficial@gmail.com` with Formspree's built-in spam protections.
+> [!IMPORTANT]
+> **Vite Environment Variables at Build Time**
+> Vite bakes `VITE_*` environment variables directly into the compiled client-side JavaScript bundles during `npm run build`.
+> When deploying on Vercel, Netlify, or any other hosting provider, configure `VITE_CONTACT_FORM_ENDPOINT` in the hosting dashboard **before** building, or trigger a **Redeploy** whenever the environment variable changes.
 
-### Option B: Transactional Email via Vercel + Resend
-If deploying on Vercel with the included `api/contact.ts` serverless function:
+#### How It Works:
+1. Submissions from `/contact` send an asynchronous POST request to `https://formspree.io/f/mjyyyojn` with `Accept: application/json`.
+2. Form fields sent:
+   - `name`: Client's full name
+   - `email`: Client's email address
+   - `service`: Selected project or service type
+   - `message`: Detailed project requirements
+   - `_gotcha`: Hidden honeypot field (silently suppresses automated spam bots)
+3. If `VITE_CONTACT_FORM_ENDPOINT` is ever omitted, the form gracefully displays a clear configuration notification and offers the direct `mailto:` fallback without losing user input.
+
+### Optional Future Alternative: Transactional Email via Vercel + Resend
+If you ever migrate to custom transactional email routing using the included `api/contact.ts` serverless function:
 1. Sign up at [Resend.com](https://resend.com/) and obtain an API Key (`re_...`).
 2. Add your verified domain (e.g. `usolve.in`) in the Resend dashboard.
-3. In the Vercel project settings under **Environment Variables**, add:
+3. In your Vercel project settings under **Environment Variables**, add:
    - `RESEND_API_KEY`: your Resend API key (`re_...`)
    - `CONTACT_NOTIFICATION_EMAIL`: `usolveofficial@gmail.com`
    - `VERIFIED_SENDER_EMAIL`: `inquiries@usolve.in` (or `onboarding@resend.dev` for initial testing)
-4. Set the client endpoint:
+4. Update the client endpoint variable in Vercel:
    ```env
    VITE_CONTACT_FORM_ENDPOINT=/api/contact
    ```
-5. Incoming inquiries will be sent directly from your serverless function to `usolveofficial@gmail.com` with clean HTML formatting and direct reply-to headers.
+5. Trigger a **Redeploy** on Vercel so Vite compiles the new endpoint.
 
 ---
 

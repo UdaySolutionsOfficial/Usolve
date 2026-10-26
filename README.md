@@ -15,7 +15,7 @@ This repository contains the production-ready corporate website for **USolve**, 
 - **Motion & Interactions**: Framer Motion & CSS hardware-accelerated transforms (respects `prefers-reduced-motion`)
 - **Icons**: Lucide React
 - **Routing**: React Router DOM 6 with route-level code splitting (`React.lazy`)
-- **Backend / Delivery Layer**: Serverless email handler (`api/contact.ts`) supporting Resend or hosted Formspree endpoints
+- **Backend / Delivery Layer**: Formspree contact delivery to `usolveofficial@gmail.com` with honeypot spam protection, plus optional serverless email handler (`api/contact.ts`) supporting Resend
 
 ---
 
@@ -89,9 +89,11 @@ cp .env.example .env.local
 | Variable | Scope | Description | Default |
 |---|---|---|---|
 | `VITE_SITE_URL` | Client | Canonical production URL for SEO, sitemap, and social cards | `https://usolve.in` |
-| `VITE_CONTACT_FORM_ENDPOINT` | Client | Form endpoint URL (e.g. Formspree or `/api/contact`) | `/api/contact` |
-| `RESEND_API_KEY` | Server-only | Secret API key from Resend for serverless email delivery | Optional (Serverless only) |
+| `VITE_CONTACT_FORM_ENDPOINT` | Client | Form endpoint URL (Active Formspree endpoint: `https://formspree.io/f/mjyyyojn`) | Unset / requires config |
+| `RESEND_API_KEY` | Server-only | Secret API key from Resend for optional serverless email delivery | Optional (Serverless only) |
 | `CONTACT_NOTIFICATION_EMAIL` | Server-only | Recipient inbox for incoming client inquiries | `usolveofficial@gmail.com` |
+
+> **Note on Client Environment Variables**: Vite compiles `VITE_*` variables into static bundles during build time. Always trigger a new build/deployment after modifying `VITE_CONTACT_FORM_ENDPOINT` on hosting providers.
 
 ---
 
