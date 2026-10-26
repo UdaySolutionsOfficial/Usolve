@@ -45,18 +45,27 @@ var CONFIG = {
  */
 function doPost(e) {
   var lock = LockService.getScriptLock();
-  // Prevent concurrent race conditions
   var lockAcquired = false;
+
   try {
     lockAcquired = lock.tryLock(10000);
-  } catch (err) {
-    // Continue if lock is unavailable
+  } catch (lockErr) {
+    lockAcquired = false;
+  }
+
+  // If lock cannot be obtained within timeout, reject safely rather than risking duplicate sends
+  if (!lockAcquired) {
+    return createJsonResponse({
+      success: false,
+      error: 'Server Busy',
+      message: 'The email service is currently handling high volume. Please try again shortly.'
+    });
   }
 
   try {
     // 1. Verify request body exists
     if (!e || !e.postData || !e.postData.contents) {
-      return createJsonResponse(400, {
+      return createJsonResponse({
         success: false,
         error: 'Bad Request',
         message: 'Missing request payload.'
@@ -67,7 +76,7 @@ function doPost(e) {
     try {
       data = JSON.parse(e.postData.contents);
     } catch (parseErr) {
-      return createJsonResponse(400, {
+      return createJsonResponse({
         success: false,
         error: 'Invalid JSON',
         message: 'Could not parse JSON payload.'
@@ -79,33 +88,29 @@ function doPost(e) {
     var expectedSecret = scriptProperties.getProperty('SHARED_SECRET');
 
     if (!expectedSecret) {
-      Logger.log('[CONFIGURATION ERROR] SHARED_SECRET is not set in Script Properties.');
-      return createJsonResponse(500, {
+      Logger.log('[CONFIGURATION ERROR] SHARED_SECRET is not configured in Script Properties.');
+      return createJsonResponse({
         success: false,
-        error: 'Server Configuration Error',
-        message: 'Shared secret authentication is not configured in Apps Script properties.'
+        error: 'Configuration Error',
+        message: 'Shared secret authentication is pending configuration.'
       });
     }
 
-    // Extract secret from payload or auth headers
-    var providedSecret = data.secret || '';
-    if (!providedSecret && e.parameter && e.parameter.secret) {
-      providedSecret = e.parameter.secret;
-    }
+    var providedSecret = (data && data.secret) || (e.parameter && e.parameter.secret) || '';
 
     if (!providedSecret || providedSecret !== expectedSecret) {
-      Logger.log('[AUTH FAILED] Unauthorized request attempt.');
-      return createJsonResponse(401, {
+      Logger.log('[AUTH FAILED] Unauthorized request rejected.');
+      return createJsonResponse({
         success: false,
         error: 'Unauthorized',
         message: 'Authentication failed. Invalid or missing secret token.'
       });
     }
 
-    // 3. Honeypot check (defense in depth)
+    // 3. Honeypot check (defense in depth for automated bots)
     if (data._gotcha && String(data._gotcha).trim().length > 0) {
-      Logger.log('[SPAM FILTER] Honeypot triggered. Request silently dropped.');
-      return createJsonResponse(200, {
+      Logger.log('[SPAM FILTER] Honeypot triggered. Silently completed.');
+      return createJsonResponse({
         success: true,
         message: 'Enquiry processed.'
       });
@@ -118,7 +123,7 @@ function doPost(e) {
     var message = (data.message || '').toString().trim();
 
     if (!name || name.length < 2 || name.length > 100) {
-      return createJsonResponse(400, {
+      return createJsonResponse({
         success: false,
         error: 'Validation Error',
         message: 'Name must be between 2 and 100 characters.'
@@ -127,7 +132,7 @@ function doPost(e) {
 
     var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email) || email.length > 150) {
-      return createJsonResponse(400, {
+      return createJsonResponse({
         success: false,
         error: 'Validation Error',
         message: 'A valid email address is required.'
@@ -135,7 +140,7 @@ function doPost(e) {
     }
 
     if (!message || message.length < 10 || message.length > 5000) {
-      return createJsonResponse(400, {
+      return createJsonResponse({
         success: false,
         error: 'Validation Error',
         message: 'Message must be between 10 and 5000 characters.'
@@ -144,13 +149,12 @@ function doPost(e) {
 
     // 5. Check remaining MailApp quota
     var remainingQuota = MailApp.getRemainingDailyQuota();
-    Logger.log('Remaining daily MailApp quota: ' + remainingQuota);
     if (remainingQuota <= 0) {
       Logger.log('[QUOTA EXCEEDED] MailApp daily quota exhausted for today.');
-      return createJsonResponse(503, {
+      return createJsonResponse({
         success: false,
         error: 'Quota Exceeded',
-        message: 'Daily email quota exhausted. Please try again tomorrow or contact us directly.'
+        message: 'Daily email quota exhausted. Inquiry is securely recorded in Formspree.'
       });
     }
 
@@ -168,18 +172,18 @@ function doPost(e) {
       replyTo: CONFIG.SUPPORT_EMAIL
     });
 
-    Logger.log('[SUCCESS] Confirmation email dispatched to: ' + email);
+    // Sanitized log without user message or sensitive tokens
+    Logger.log('[SUCCESS] Confirmation email dispatched.');
 
-    return createJsonResponse(200, {
+    return createJsonResponse({
       success: true,
-      message: 'Confirmation email successfully sent to ' + email,
-      recipient: email,
+      message: 'Confirmation email successfully sent.',
       timestamp: new Date().toISOString()
     });
 
   } catch (err) {
-    Logger.log('[FATAL ERROR] ' + err.toString());
-    return createJsonResponse(500, {
+    Logger.log('[EXECUTION ERROR] Script error occurred.');
+    return createJsonResponse({
       success: false,
       error: 'Internal Error',
       message: 'An unexpected error occurred while sending confirmation email.'
@@ -188,29 +192,21 @@ function doPost(e) {
     if (lockAcquired) {
       try {
         lock.releaseLock();
-      } catch (e) {
-        // Ignore release errors
+      } catch (releaseErr) {
+        // Ignore lock release errors
       }
     }
   }
 }
 
 /**
- * Responds to GET requests with a health check.
+ * Health check endpoint for monitoring.
+ * Note: Does not disclose internal quota counts or sensitive details to anonymous callers.
  */
 function doGet(e) {
-  var remainingQuota = 0;
-  try {
-    remainingQuota = MailApp.getRemainingDailyQuota();
-  } catch (err) {
-    remainingQuota = -1;
-  }
-
-  return createJsonResponse(200, {
+  return createJsonResponse({
     service: 'USolve Confirmation Email Web App',
-    status: 'online',
-    remainingQuota: remainingQuota,
-    timestamp: new Date().toISOString()
+    status: 'online'
   });
 }
 
@@ -261,6 +257,7 @@ function buildPlainTextConfirmation(name, email, service, message) {
 
 /**
  * Constructs responsive, email-client-compatible HTML email body.
+ * Embeds authentic USolve brand logo with accessible fallback text.
  */
 function buildHtmlConfirmation(name, email, service, message) {
   var safeName = escapeHtml(name);
@@ -283,16 +280,19 @@ function buildHtmlConfirmation(name, email, service, message) {
     '        <!-- Main Container Card -->' +
     '        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 12px; border: 1px solid #DFE6EF; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">' +
     '          ' +
-    '          <!-- Brand Header -->' +
+    '          <!-- Brand Header with Logo -->' +
     '          <tr>' +
-    '            <td style="padding: 32px 32px 24px 32px; background: linear-gradient(135deg, #142744 0%, #1E50C8 100%); color: #FFFFFF; text-align: left;">' +
-    '              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' +
+    '            <td style="padding: 28px 32px; background: linear-gradient(135deg, #142744 0%, #1E50C8 100%); color: #FFFFFF; text-align: left;">' +
+    '              <table role="presentation" cellpadding="0" cellspacing="0" border="0">' +
     '                <tr>' +
-    '                  <td>' +
-    '                    <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF; margin: 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">' +
+    '                  <td valign="middle" style="padding-right: 14px;">' +
+    '                    <img src="' + CONFIG.LOGO_URL + '" alt="USolve" width="44" height="44" style="display: block; width: 44px; height: 44px; border: 0; outline: none;" />' +
+    '                  </td>' +
+    '                  <td valign="middle">' +
+    '                    <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF; margin: 0; line-height: 1.1;">' +
     '                      USolve' +
     '                    </div>' +
-    '                    <div style="font-size: 13px; color: #E0E7FF; margin-top: 4px; font-weight: 500; letter-spacing: 0.5px;">' +
+    '                    <div style="font-size: 13px; color: #E0E7FF; margin-top: 3px; font-weight: 500; letter-spacing: 0.3px;">' +
     '                      ' + CONFIG.TAGLINE + '' +
     '                    </div>' +
     '                  </td>' +
@@ -412,8 +412,13 @@ function buildHtmlConfirmation(name, email, service, message) {
 
 /**
  * Creates standard JSON response for Google Apps Script Web App.
+ * 
+ * NOTE ON HTTP STATUS CODES:
+ * Google Apps Script's ContentService.createTextOutput() does not support setting
+ * custom HTTP status codes (it always returns HTTP 200 at the transport layer).
+ * The caller must parse the JSON payload and inspect the "success" boolean field.
  */
-function createJsonResponse(statusCode, payload) {
+function createJsonResponse(payload) {
   var output = ContentService.createTextOutput(JSON.stringify(payload));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;

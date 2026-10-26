@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Mail,
@@ -16,6 +16,26 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { SEO } from '../components/common/SEO';
 import { ROUTE_SEO, getSiteUrl } from '../utils/seo';
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement | string,
+        params: {
+          sitekey: string;
+          callback?: (token: string) => void;
+          'error-callback'?: () => void;
+          'expired-callback'?: () => void;
+          theme?: 'light' | 'dark' | 'auto';
+          size?: 'normal' | 'compact' | 'flexible';
+        }
+      ) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId?: string) => void;
+    };
+  }
+}
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -45,6 +65,56 @@ export const ContactPage: React.FC = () => {
   const [confirmationStatus, setConfirmationStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [deliveryTimestamp, setDeliveryTimestamp] = useState<string>('');
+
+  // Cloudflare Turnstile bot verification
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
+
+  // Initialize Turnstile explicitly when site key is configured
+  useEffect(() => {
+    if (!turnstileSiteKey || status === 'success') return;
+
+    const renderWidget = () => {
+      if (window.turnstile && turnstileContainerRef.current && !turnstileWidgetIdRef.current) {
+        try {
+          turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: turnstileSiteKey,
+            theme: 'light',
+            callback: (token: string) => setTurnstileToken(token),
+            'expired-callback': () => setTurnstileToken(''),
+            'error-callback': () => setTurnstileToken(''),
+          });
+        } catch (_) {}
+      }
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const existingScript = document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          if (window.turnstile) renderWidget();
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    return () => {
+      if (window.turnstile && turnstileWidgetIdRef.current) {
+        try {
+          window.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch (_) {}
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, [turnstileSiteKey, status]);
 
   // Pre-fill service from URL if passed (e.g. ?service=...)
   useEffect(() => {
@@ -145,12 +215,13 @@ export const ContactPage: React.FC = () => {
               service: formData.serviceType,
               message: formData.message.trim(),
               _gotcha: formData._gotcha,
+              turnstileToken: turnstileToken,
             }),
           });
 
           if (confirmRes.ok) {
             const confirmData = await confirmRes.json().catch(() => null);
-            if (confirmData && confirmData.success) {
+            if (confirmData && confirmData.success === true) {
               setConfirmationStatus('sent');
             } else {
               setConfirmationStatus('failed');
@@ -354,6 +425,12 @@ export const ContactPage: React.FC = () => {
                         onClick={() => {
                           setStatus('idle');
                           setConfirmationStatus('idle');
+                          setTurnstileToken('');
+                          if (window.turnstile && turnstileWidgetIdRef.current) {
+                            try {
+                              window.turnstile.reset(turnstileWidgetIdRef.current);
+                            } catch (_) {}
+                          }
                           setFormData({
                             fullName: '',
                             email: '',
@@ -524,6 +601,13 @@ export const ContactPage: React.FC = () => {
                         </p>
                       )}
                     </div>
+
+                    {/* Cloudflare Turnstile Bot Protection (Visible when VITE_TURNSTILE_SITE_KEY is configured) */}
+                    {turnstileSiteKey && (
+                      <div className="flex justify-start pt-1 pb-1">
+                        <div ref={turnstileContainerRef} />
+                      </div>
+                    )}
 
                     <Button
                       type="submit"

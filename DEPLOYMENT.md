@@ -40,6 +40,29 @@ The website is pre-configured to use the official USolve Formspree form:
    - `_gotcha`: Hidden honeypot field (silently suppresses automated spam bots)
 3. If `VITE_CONTACT_FORM_ENDPOINT` is ever omitted, the form gracefully displays a clear configuration notification and offers the direct `mailto:` fallback without losing user input.
 
+### Cloudflare Turnstile Bot Protection (100% Free)
+To protect `/api/send-confirmation` from automated replay or bot abuse, USolve integrates Cloudflare Turnstile:
+- **Free Quota**: Turnstile is completely free with unlimited challenges under Cloudflare's free tier.
+- **Widget Mode**: Uses "Managed" mode. Cloudflare evaluates visitor signals and executes seamlessly without irritating puzzles. When low risk is detected, verification passes silently.
+- **Setup**:
+  1. Sign in to [Cloudflare](https://dash.cloudflare.com/) and navigate to **Turnstile**.
+  2. Click **Add Site**:
+     - Site name: `USolve Corporate Website`
+     - Domain: `usolve.in` (and your Vercel domains / `localhost` for testing)
+     - Widget Mode: **Managed**
+  3. Copy the **Site Key** and **Secret Key**.
+  4. In Vercel Environment Variables:
+     - `VITE_TURNSTILE_SITE_KEY`: `<your-site-key>` (Client-side)
+     - `TURNSTILE_SECRET_KEY`: `<your-secret-key>` (Server-only)
+
+### Rate Limiting & Serverless Behavior
+- `/api/send-confirmation` enforces a sliding-window rate limit (5 requests per 10 minutes per IP).
+- **Serverless Architectural Note**: In serverless platforms like Vercel, in-memory state is maintained per warm instance. Cold starts or requests distributed across edge nodes maintain separate local maps. For this reason, in-memory rate limiting is designed as one layer among several:
+  1. Cloudflare Turnstile token validation blocks automated bots at the gate.
+  2. Honeypot fields silently trap automated web crawlers.
+  3. Origin / Referer validation blocks unauthorized third-party cross-site POSTs.
+  4. Google MailApp daily quota caps total sends at 100/day (standard Gmail) or 1,500/day (Google Workspace).
+
 ### Automated Client Confirmation Email (Google Apps Script — 100% Free)
 When an enquiry is successfully received by Formspree, USolve can automatically dispatch an official, branded HTML confirmation email back to the prospective client using Google Apps Script's `MailApp.sendEmail` authorized under `usolveofficial@gmail.com`.
 
@@ -119,6 +142,8 @@ If you ever migrate to custom transactional email routing using the included `ap
 5. Under **Environment Variables**, add:
    - `VITE_SITE_URL`: `https://your-custom-domain.com` (e.g. `https://usolve.in`)
    - `VITE_CONTACT_FORM_ENDPOINT`: `https://formspree.io/f/mjyyyojn`
+   - `VITE_TURNSTILE_SITE_KEY`: (Optional) your Cloudflare Turnstile public site key
+   - `TURNSTILE_SECRET_KEY`: (Optional) your Cloudflare Turnstile secret key
    - `USOLVE_APPS_SCRIPT_URL`: your deployed Google Apps Script web app URL
    - `USOLVE_EMAIL_SHARED_SECRET`: your secret key matching Apps Script Script Properties
    - (If using Resend optionally): `RESEND_API_KEY`, `CONTACT_NOTIFICATION_EMAIL`

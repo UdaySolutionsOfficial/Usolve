@@ -90,6 +90,8 @@ cp .env.example .env.local
 |---|---|---|---|
 | `VITE_SITE_URL` | Client | Canonical production URL for SEO, sitemap, and social cards | `https://usolve.in` |
 | `VITE_CONTACT_FORM_ENDPOINT` | Client | Form endpoint URL (Active Formspree endpoint: `https://formspree.io/f/mjyyyojn`) | Unset / requires config |
+| `VITE_TURNSTILE_SITE_KEY` | Client | Cloudflare Turnstile public site key for bot challenge | Optional / Client-side |
+| `TURNSTILE_SECRET_KEY` | Server-only | Cloudflare Turnstile secret key for server token verification | Optional / Server-only |
 | `USOLVE_APPS_SCRIPT_URL` | Server-only | Google Apps Script Web App URL for free HTML confirmation emails | Optional / Server-only |
 | `USOLVE_EMAIL_SHARED_SECRET` | Server-only | Private shared secret for authenticating with Google Apps Script | Optional / Server-only |
 | `RESEND_API_KEY` | Server-only | Secret API key from Resend for optional serverless email delivery | Optional (Serverless only) |
