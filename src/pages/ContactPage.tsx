@@ -42,6 +42,7 @@ export const ContactPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<FormStatus>('idle');
+  const [confirmationStatus, setConfirmationStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [deliveryTimestamp, setDeliveryTimestamp] = useState<string>('');
 
@@ -80,12 +81,17 @@ export const ContactPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent duplicate submissions while in progress
+    if (status === 'submitting') return;
+
     if (!validate()) return;
 
     // Honeypot spam defense (checks both React state and DOM form element)
     const domGotcha = (e.currentTarget as any).elements?.['_gotcha']?.value || '';
     if (formData._gotcha.trim().length > 0 || domGotcha.trim().length > 0) {
       setStatus('success');
+      setConfirmationStatus('sent');
       setDeliveryTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       return;
     }
@@ -101,6 +107,7 @@ export const ContactPage: React.FC = () => {
 
     setStatus('submitting');
     setErrorMessage('');
+    setConfirmationStatus('idle');
 
     try {
       const response = await fetch(endpoint, {
@@ -120,7 +127,41 @@ export const ContactPage: React.FC = () => {
 
       if (response.ok) {
         setStatus('success');
-        setDeliveryTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setDeliveryTimestamp(timestamp);
+
+        // Enquiry was received by Formspree! Now request confirmation email via serverless relay
+        setConfirmationStatus('sending');
+        try {
+          const confirmRes = await fetch('/api/send-confirmation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify({
+              name: formData.fullName.trim(),
+              email: formData.email.trim(),
+              service: formData.serviceType,
+              message: formData.message.trim(),
+              _gotcha: formData._gotcha,
+            }),
+          });
+
+          if (confirmRes.ok) {
+            const confirmData = await confirmRes.json().catch(() => null);
+            if (confirmData && confirmData.success) {
+              setConfirmationStatus('sent');
+            } else {
+              setConfirmationStatus('failed');
+            }
+          } else {
+            setConfirmationStatus('failed');
+          }
+        } catch {
+          // If serverless relay is unconfigured or unreachable, preserve enquiry success
+          setConfirmationStatus('failed');
+        }
       } else {
         const errorData = await response.json().catch(() => null);
         let errorText =
@@ -289,6 +330,21 @@ export const ContactPage: React.FC = () => {
                       <div><strong className="text-brand-navy">Service:</strong> {formData.serviceType}</div>
                       <div><strong className="text-brand-navy">Client Email:</strong> {formData.email}</div>
                       <div><strong className="text-brand-navy">Recipient:</strong> usolveofficial@gmail.com</div>
+                      <div className="pt-2 border-t border-brand-border/60">
+                        <strong className="text-brand-navy">Confirmation Email: </strong>
+                        {confirmationStatus === 'sending' && (
+                          <span className="text-brand-blue">Sending confirmation to {formData.email}...</span>
+                        )}
+                        {confirmationStatus === 'sent' && (
+                          <span className="text-emerald-700 font-medium">✓ A confirmation email with your enquiry summary was sent to {formData.email}.</span>
+                        )}
+                        {confirmationStatus === 'failed' && (
+                          <span className="text-brand-slate/80">Enquiry recorded successfully. (Automated confirmation email could not be dispatched, but our engineering team will follow up directly).</span>
+                        )}
+                        {confirmationStatus === 'idle' && (
+                          <span className="text-emerald-700 font-medium">✓ Enquiry recorded.</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="pt-2">
@@ -297,6 +353,7 @@ export const ContactPage: React.FC = () => {
                         size="md"
                         onClick={() => {
                           setStatus('idle');
+                          setConfirmationStatus('idle');
                           setFormData({
                             fullName: '',
                             email: '',
