@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeroSection } from '../components/home/HeroSection';
+import { HeroVideoSection } from '../components/home/HeroVideoSection';
 import { ServicesOverview } from '../components/home/ServicesOverview';
 import { FeaturedProjects } from '../components/home/FeaturedProjects';
 import { WhyChooseUs } from '../components/home/WhyChooseUs';
@@ -24,6 +25,7 @@ export const HomePage: React.FC = () => {
         structuredData={structuredData}
       />
       <HeroSection />
+      <HeroVideoSection />
       <ServicesOverview />
       <FeaturedProjects />
       <WhyChooseUs />
