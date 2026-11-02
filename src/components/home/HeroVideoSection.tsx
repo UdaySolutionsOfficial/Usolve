@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion,
+  AnimatePresence,
   useScroll,
   useTransform,
   useSpring,
@@ -27,7 +28,11 @@ export const HeroVideoSection: React.FC = () => {
   const [duration, setDuration] = useState(19);
   const [showControls, setShowControls] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [isHoveringVideo, setIsHoveringVideo] = useState(false);
+  const [isHoveringControls, setIsHoveringControls] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
+  const hasAutoPlayedWithSound = useRef(false);
   const shouldReduceMotion = useReducedMotion();
 
   // Scroll to scale effect tracking:
@@ -58,25 +63,72 @@ export const HeroVideoSection: React.FC = () => {
   const animatedScale = shouldReduceMotion ? 1 : scaleSpring;
   const animatedOpacity = shouldReduceMotion ? 1 : opacitySpring;
 
-  // Autoplay initialization with graceful fallback
+  // Auto-play with sound on first scroll into view, and auto-mute when scrolling away
   useEffect(() => {
+    const section = sectionRef.current;
     const video = videoRef.current;
-    if (!video) return;
+    if (!section || !video) return;
 
-    // Enforce initial muted state for mobile and desktop autoplay policy compliance
+    // Enforce initial muted state for strict browser load compliance
     video.muted = true;
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          // If browser prevented autoplay, remain ready for first user touch
-          setIsPlaying(false);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.35) {
+            // First time user scrolls into the video section:
+            // Attempt unmuted auto-play with audio
+            if (!hasAutoPlayedWithSound.current) {
+              hasAutoPlayedWithSound.current = true;
+              video.muted = false;
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    setIsMuted(false);
+                    setIsPlaying(true);
+                    setHasInteracted(true);
+                  })
+                  .catch(() => {
+                    // Browser policy blocked unmuted playback prior to user gesture;
+                    // gracefully continue playing in muted mode without error
+                    video.muted = true;
+                    video.play().catch(() => {});
+                    setIsMuted(true);
+                    setIsPlaying(true);
+                  });
+              }
+            } else {
+              // Returning back to the video section: resume playback if paused
+              if (video.paused) {
+                video.play().then(() => setIsPlaying(true)).catch(() => {});
+              }
+            }
+          } else if (!entry.isIntersecting || entry.intersectionRatio < 0.2) {
+            // When user scrolls up/down toward next sections:
+            // Automatically mute the video
+            if (!video.muted) {
+              video.muted = true;
+              setIsMuted(true);
+            }
+          }
         });
-    }
+      },
+      { threshold: [0.15, 0.35, 0.6] }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
   }, []);
+
+  // Track mouse coordinates for the custom cursor pill
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCursorPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
 
   // Update progress bar & time counters
   const handleTimeUpdate = () => {
@@ -200,7 +252,6 @@ export const HeroVideoSection: React.FC = () => {
             ref={playerContainerRef}
             onMouseEnter={() => setShowControls(true)}
             onMouseLeave={() => setShowControls(false)}
-            onClick={() => setShowControls((prev) => !prev)}
             className="group relative rounded-2xl sm:rounded-3xl bg-brand-navy shadow-elevated border border-brand-border/90 overflow-hidden transition-all duration-300"
           >
             {/* Top Studio Window Header Bar */}
@@ -221,8 +272,44 @@ export const HeroVideoSection: React.FC = () => {
               <div className="w-16 sm:w-20" aria-hidden="true" />
             </div>
 
-            {/* Video Viewport Container (16:9 Aspect Ratio) */}
-            <div className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center">
+            {/* Video Viewport Container (16:9 Aspect Ratio) with Interactive Hover Cursor Pill */}
+            <div
+              onMouseMove={handleMouseMove}
+              onMouseEnter={() => setIsHoveringVideo(true)}
+              onMouseLeave={() => setIsHoveringVideo(false)}
+              onClick={togglePlay}
+              className="relative aspect-video w-full bg-black overflow-hidden flex items-center justify-center cursor-pointer md:cursor-none select-none"
+            >
+              {/* Dynamic Interactive Cursor Pill (Follows cursor on hover) */}
+              <AnimatePresence>
+                {isHoveringVideo && !isHoveringControls && (
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.6, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+                    style={{
+                      left: cursorPos.x,
+                      top: cursorPos.y,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    className="pointer-events-none absolute z-30 hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-brand-navy/90 text-white text-xs font-bold backdrop-blur-md border border-white/25 shadow-2xl shadow-black/60 select-none tracking-wide"
+                  >
+                    {isPlaying ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5 fill-current" />
+                        <span>Pause</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                        <span>Play</span>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <video
                 ref={videoRef}
                 autoPlay
@@ -232,7 +319,7 @@ export const HeroVideoSection: React.FC = () => {
                 preload="auto"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
-                className="w-full h-full object-cover select-none pointer-events-auto"
+                className="w-full h-full object-cover select-none pointer-events-none"
                 aria-label="USolve Corporate Product and Solutions Video Reel"
               >
                 {/* Clean web-safe slug and original filename sources */}
@@ -243,12 +330,17 @@ export const HeroVideoSection: React.FC = () => {
 
               {/* Unmute Prompt Pill for Visitors (disappears once clicked) */}
               {isMuted && !hasInteracted && (
-                <div className="absolute top-4 right-4 z-20 pointer-events-auto">
+                <div
+                  onMouseEnter={() => setIsHoveringControls(true)}
+                  onMouseLeave={() => setIsHoveringControls(false)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute top-4 right-4 z-40 pointer-events-auto"
+                >
                   <button
                     type="button"
                     onClick={toggleMute}
                     aria-label="Unmute video with audio"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-navy/85 hover:bg-brand-blue text-white text-xs font-medium backdrop-blur-md border border-white/20 shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-navy/85 hover:bg-brand-blue text-white text-xs font-medium backdrop-blur-md border border-white/20 shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
                   >
                     <VolumeX className="w-3.5 h-3.5 text-amber-300" />
                     <span>Unmute Sound</span>
@@ -258,7 +350,10 @@ export const HeroVideoSection: React.FC = () => {
 
               {/* Glassmorphic Floating Controls Bar */}
               <div
-                className={`absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 transition-all duration-300 pointer-events-auto ${
+                onMouseEnter={() => setIsHoveringControls(true)}
+                onMouseLeave={() => setIsHoveringControls(false)}
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-40 transition-all duration-300 pointer-events-auto ${
                   showControls || !isPlaying
                     ? 'opacity-100 translate-y-0'
                     : 'opacity-90 sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0'
