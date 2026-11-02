@@ -12,7 +12,6 @@ import {
   Volume2,
   VolumeX,
   Maximize2,
-  Sparkles,
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 
@@ -31,27 +30,29 @@ export const HeroVideoSection: React.FC = () => {
 
   const shouldReduceMotion = useReducedMotion();
 
-  // Scroll to scale effect tracking
+  // Scroll to scale effect tracking:
+  // Starts responding when the section enters the lower viewport and smoothly
+  // expands to its full occupying presence as it aligns in view.
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ['start end', 'center center'],
+    offset: ['start 92%', 'center 48%'],
   });
 
-  // Smooth scroll scale transformation:
-  // Starts at 0.90 scale when entering the viewport, scales smoothly to 1.0 at center
-  const scaleRaw = useTransform(scrollYProgress, [0, 1], [0.90, 1.0]);
-  const opacityRaw = useTransform(scrollYProgress, [0, 0.4], [0.8, 1.0]);
+  // Sensitive "very small to big" scaling:
+  // Starts at a compact 0.58 scale and expands dynamically to 1.0 (full occupying width)
+  const scaleRaw = useTransform(scrollYProgress, [0, 1], [0.58, 1.0]);
+  const opacityRaw = useTransform(scrollYProgress, [0, 0.25], [0.75, 1.0]);
 
-  // Spring physics for buttery-smooth professional animation without scroll jitter
+  // Spring physics calibrated for immediate sensitivity and fluid responsiveness without lag
   const scaleSpring = useSpring(scaleRaw, {
-    stiffness: 110,
-    damping: 24,
-    mass: 0.5,
+    stiffness: 220,
+    damping: 26,
+    mass: 0.25,
   });
   const opacitySpring = useSpring(opacityRaw, {
-    stiffness: 110,
-    damping: 24,
-    mass: 0.5,
+    stiffness: 220,
+    damping: 26,
+    mass: 0.25,
   });
 
   const animatedScale = shouldReduceMotion ? 1 : scaleSpring;
@@ -163,11 +164,11 @@ export const HeroVideoSection: React.FC = () => {
       ref={sectionRef}
       id="showcase-reel"
       aria-label="USolve Hero Video Showcase"
-      className="relative py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-brand-bg via-brand-bg-alt/40 to-brand-bg-alt/70 border-b border-brand-border/70 overflow-hidden"
+      className="relative py-14 sm:py-20 lg:py-24 bg-gradient-to-b from-brand-bg via-brand-bg-alt/40 to-brand-bg-alt/70 border-b border-brand-border/70 overflow-hidden"
     >
       {/* Ambient Radial Backlight Glow */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 max-w-4xl h-72 sm:h-96 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 max-w-5xl h-80 sm:h-[420px] bg-brand-blue/10 rounded-full blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
@@ -193,7 +194,7 @@ export const HeroVideoSection: React.FC = () => {
             scale: animatedScale,
             opacity: animatedOpacity,
           }}
-          className="w-full max-w-5xl mx-auto"
+          className="w-full max-w-6xl mx-auto origin-center"
         >
           <div
             ref={playerContainerRef}
@@ -204,29 +205,20 @@ export const HeroVideoSection: React.FC = () => {
           >
             {/* Top Studio Window Header Bar */}
             <div className="bg-brand-navy-dark/95 backdrop-blur-md px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-white/10 flex items-center justify-between select-none">
-              {/* Left Mac/Studio Window Dots */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Left Studio Window Dots */}
+              <div className="flex items-center gap-1.5 sm:gap-2 w-16 sm:w-20">
                 <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500/80 inline-block" />
                 <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400/80 inline-block" />
                 <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400/80 inline-block" />
-                <span className="ml-2 hidden sm:inline-block text-[11px] font-mono text-slate-400">
-                  usolve-system-reel.mp4
-                </span>
               </div>
 
-              {/* Center Title Pill */}
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-                <Sparkles className="w-3.5 h-3.5 text-brand-blue-soft" />
-                <span className="tracking-wide">USolve Technology Showcase</span>
+              {/* Center Clean Brand Name */}
+              <div className="text-center font-heading font-bold text-xs sm:text-sm tracking-wider text-slate-200">
+                USolve
               </div>
 
-              {/* Right Telemetry Badge */}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  1080p HD
-                </span>
-              </div>
+              {/* Right Balanced Spacer (keeps center text mathematically centered) */}
+              <div className="w-16 sm:w-20" aria-hidden="true" />
             </div>
 
             {/* Video Viewport Container (16:9 Aspect Ratio) */}
