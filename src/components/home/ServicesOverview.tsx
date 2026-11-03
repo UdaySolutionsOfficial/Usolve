@@ -116,8 +116,8 @@ export const ServicesOverview: React.FC = () => {
             radius={20} // Panel corner radius
             reflection={0.14} // Studio floor reflection
             dim={0.35} // Edge dimming
-            scrollDriven={true}
-            scrollTargetRef={sectionRef}
+            autoplay={true} // Natural automatic smooth moving loop
+            speed={0.12} // Gentle continuous drift
           />
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { useScroll, useSpring, useTransform, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -17,14 +17,14 @@ export interface ConcaveCarouselProps {
   items: ConcaveCarouselItem[];
   startIndex?: number;
   curvature?: number; // 0 (flat) to 1 (tight drum), default 0.72
-  distance?: number; // distance in panel heights, default 3.8
+  distance?: number; // distance in panel heights, default 3.6
   tilt?: number; // vertical tilt in degrees, default 0
   gap?: number; // gap between panels in px, default 24
   radius?: number; // corner radius in px, default 20
   reflection?: number; // reflection opacity, default 0.14
   dim?: number; // edge dimming factor, default 0.35
-  scrollDriven?: boolean;
-  scrollTargetRef?: React.RefObject<HTMLElement | null>;
+  autoplay?: boolean; // natural automatic smooth moving loop
+  speed?: number; // continuous drift speed (panels/sec)
   className?: string;
 }
 
@@ -38,8 +38,8 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   radius = 20,
   reflection = 0.14,
   dim = 0.35,
-  scrollDriven = true,
-  scrollTargetRef,
+  autoplay = true,
+  speed = 0.12, // Silky smooth natural drift: ~8s per card transition
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,8 +48,11 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
   const [currentIndex, setCurrentIndex] = useState<number>(startIndex);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragStartIndex, setDragStartIndex] = useState(0);
+  const isDraggingRef = useRef(false);
+  const isHoveredRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartIndexRef = useRef(0);
+  const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
 
   // Initialize with exact window dimensions
   const [viewportWidth, setViewportWidth] = useState(() =>
@@ -71,75 +74,96 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
   const totalItems = items.length;
 
-  // INCREASED CARD SIZING: Large, prominent, professional cards matching reference video
-  // Dynamically responsive to viewport height so they never clip on laptops
+  // INCREASED HEIGHT & CARD SIZING:
+  // Taller panel height with 1.26 aspect ratio ensures the 3D artwork inside
+  // is 100% visible vertically with NO top/bottom cropping.
   let panelHeight: number;
   if (viewportHeight < 620) {
-    panelHeight = 220;
+    panelHeight = 245;
   } else if (viewportHeight < 720) {
-    panelHeight = 260;
+    panelHeight = 290;
   } else if (viewportHeight < 850) {
-    panelHeight = 295;
-  } else if (viewportHeight < 1050) {
     panelHeight = 330;
+  } else if (viewportHeight < 1050) {
+    panelHeight = 365;
   } else {
-    panelHeight = 360;
+    panelHeight = 400;
   }
 
-  // Constrain width on narrow mobile viewports
+  // Mobile constraint
   if (viewportWidth < 500) {
-    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.3));
+    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.26));
   }
 
-  const aspect = 1.32; // Width / Height aspect ratio (e.g. 435px wide x 330px high)
+  // 1.26 aspect ratio perfectly matches the 1200x896 source images vertically
+  const aspect = 1.26;
   const panelWidth = Math.round(panelHeight * aspect);
 
-  // Scroll-linked horizontal movement:
-  // Tracks parent section scroll smoothly from progress 0 to 1
-  const targetRef = scrollTargetRef || containerRef;
-  const { scrollYProgress } = useScroll({
-    target: targetRef as React.RefObject<HTMLElement>,
-    offset: ['start start', 'end end'],
-  });
-
-  // Map 0 -> 1 progress to 0 -> totalItems (endless 1 -> n -> 1 full cycle)
-  const scrollTargetIndex = useTransform(scrollYProgress, [0, 1], [0, totalItems]);
-  const smoothIndex = useSpring(scrollTargetIndex, {
-    stiffness: 80,
-    damping: 24,
-    mass: 0.3,
-  });
-
+  // NATURAL AUTOMATIC SMOOTH MOVING LOOP (Autoplay Drift)
+  // Buttery smooth requestAnimationFrame loop that continuously drifts across cards
   useEffect(() => {
-    if (!scrollDriven || shouldReduceMotion) return;
-    const unsub = smoothIndex.on('change', (val) => {
-      if (!isDragging) {
-        setCurrentIndex(val);
+    if (!autoplay || shouldReduceMotion) return;
+
+    let animId: number;
+    let lastTime = performance.now();
+
+    const loop = (now: number) => {
+      const dt = Math.min(0.1, (now - lastTime) / 1000); // capped delta time in seconds
+      lastTime = now;
+
+      if (!isDraggingRef.current && !isHoveredRef.current) {
+        setCurrentIndex((prev) => prev + speed * dt);
       }
-    });
-    return () => unsub();
-  }, [smoothIndex, scrollDriven, isDragging, shouldReduceMotion]);
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [autoplay, speed, shouldReduceMotion]);
+
+  // ON-SCROLL SYNC:
+  // When the user scrolls vertically, the carousel smoothly advances with the scroll
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const deltaY = currentY - lastScrollYRef.current;
+      lastScrollYRef.current = currentY;
+
+      // Only advance if there is scroll movement and not currently dragging
+      if (Math.abs(deltaY) > 0.5 && !isDraggingRef.current) {
+        setCurrentIndex((prev) => prev + deltaY * 0.0028);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [shouldReduceMotion]);
 
   // Pointer drag gestures with infinite wrapping
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
-    setDragStartX(e.clientX);
-    setDragStartIndex(currentIndex);
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartIndexRef.current = currentIndex;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - dragStartX;
+    if (!isDraggingRef.current) return;
+    const deltaX = e.clientX - dragStartXRef.current;
     const pxPerCard = panelWidth + gap;
-    const newIdx = dragStartIndex - deltaX / pxPerCard;
+    const newIdx = dragStartIndexRef.current - deltaX / pxPerCard;
     setCurrentIndex(newIdx);
   };
 
   const handlePointerUp = () => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     setIsDragging(false);
-    // Smoothly snap to nearest integer
+    isDraggingRef.current = false;
+    // Smoothly snap to nearest integer card
     setCurrentIndex((prev) => Math.round(prev));
   };
 
@@ -153,7 +177,6 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   }, []);
 
   // 3D Geometry calculations matching React Bits Pro Concave Carousel:
-  // Generous angular separation (28°) prevents crowding and makes center card clear & distinct
   const stepAngleDeg = 28 * Math.max(0.65, curvature);
   const stepAngleRad = (stepAngleDeg * Math.PI) / 180;
   // Circumradius for exact physical gap between adjacent curved panels
@@ -167,11 +190,17 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     ((Math.round(currentIndex) % totalItems) + totalItems) % totalItems;
 
   // Clear height for navigation controls below floor reflection and caption
-  const navMarginTop = Math.round(panelHeight * 0.25 + 32);
+  const navMarginTop = Math.round(panelHeight * 0.22 + 34);
 
   return (
     <div
       ref={containerRef}
+      onMouseEnter={() => {
+        isHoveredRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isHoveredRef.current = false;
+      }}
       className={`relative w-full select-none ${className}`}
     >
       {/* 3D Perspective Stage Viewport */}
@@ -195,7 +224,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
             height: `${panelHeight}px`,
             transformStyle: 'preserve-3d',
             transform: `rotateX(${tilt}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+            transition: isDragging ? 'none' : 'transform 0.18s ease-out',
           }}
         >
           {items.map((item, index) => {
@@ -224,7 +253,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
             // Visual Depth, dimming, and edge fading matching reference video:
             // Center card is large (1.02), prominent, crisp, and elevated.
-            const scale = Math.max(0.82, 1.02 - absDelta * 0.06);
+            const scale = Math.max(0.82, 1.02 - absDelta * 0.055);
             const cardOpacity = Math.max(0, 1 - Math.pow(absDelta / 3.2, 2));
             const cardBrightness = Math.max(0.65, 1 - Math.min(0.35, absDelta * dim * 0.45));
             // Keep center card strictly on top of overlapping side panels
@@ -253,10 +282,10 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                   transformStyle: 'preserve-3d',
                   transition: isDragging
                     ? 'none'
-                    : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease-out, filter 0.25s ease-out',
+                    : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease-out, filter 0.22s ease-out',
                 }}
               >
-                {/* 3D Depth Card: 100% PURE, CLEAN FULL-BLEED ARTWORK (NO PILLS / OVERLAYS) */}
+                {/* 3D Depth Card: 100% PURE, CLEAN FULL-BLEED ARTWORK (TALLER HEIGHT FOR FULL IMAGE VIEW) */}
                 <Link
                   to={item.link}
                   className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] border border-white/20 bg-white"
@@ -268,7 +297,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                         : '0 16px 36px -12px rgba(20, 39, 68, 0.22)',
                   }}
                 >
-                  {/* Full-bleed 3D Render Image - Vibrant, crisp, 100% visible with zero overlay clutter */}
+                  {/* Full-bleed 3D Render Image - Tall, uncropped, 100% visible vertical view */}
                   <img
                     src={item.image}
                     alt={item.title}
@@ -283,7 +312,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     aria-hidden="true"
                     className="absolute top-full left-0 right-0 overflow-hidden pointer-events-none select-none mt-1 sm:mt-1.5"
                     style={{
-                      height: `${Math.round(panelHeight * 0.25)}px`,
+                      height: `${Math.round(panelHeight * 0.22)}px`,
                       transform: 'scaleY(-1)',
                       opacity: reflection * Math.max(0, 1 - absDelta * 0.25),
                       maskImage:
