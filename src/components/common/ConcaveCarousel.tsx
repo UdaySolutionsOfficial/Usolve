@@ -1,50 +1,42 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useScroll, useSpring, useTransform, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export interface ConcaveCarouselItem {
   id: string;
   title: string;
-  description: string;
+  subtitle: string;
   badge: string;
   category?: string;
   image: string;
   link: string;
-  features?: string[];
-  icon?: React.ComponentType<{ className?: string }>;
 }
 
 export interface ConcaveCarouselProps {
   items: ConcaveCarouselItem[];
   startIndex?: number;
-  curvature?: number; // 0 (flat strip) to 1 (tight drum), default 0.72
-  distance?: number; // viewer distance in panel heights, default 4
-  tilt?: number; // viewing angle in degrees, default 0
-  gap?: number; // space between panels in px, default 20
-  radius?: number; // corner radius in px, default 20
-  reflection?: number; // floor reflection strength (0 to 0.2), default 0.08
-  dim?: number; // edge fade/dimming, default 0.35
-  autoplay?: 'drift' | 'step' | 'off';
-  speed?: number; // drift speed in panels/sec, default 0.16
-  interval?: number; // interval in seconds for 'step' autoplay
-  scrollDriven?: boolean; // enable scroll-linked horizontal movement
+  curvature?: number; // 0 (flat) to 1 (tight drum), default 0.72
+  distance?: number; // distance in panel heights, default 4
+  tilt?: number; // vertical tilt in degrees, default 0
+  gap?: number; // gap between panels in px, default 16
+  radius?: number; // corner radius in px, default 18
+  reflection?: number; // reflection opacity, default 0.12
+  dim?: number; // edge dimming factor, default 0.35
+  scrollDriven?: boolean;
   className?: string;
 }
 
 export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   items,
-  startIndex = 0,
+  startIndex = 3, // Start on a visually centered card
   curvature = 0.72,
-  distance = 4,
+  distance = 3.8,
   tilt = 0,
-  gap = 20,
-  radius = 20,
-  reflection = 0.08,
+  gap = 16,
+  radius = 18,
+  reflection = 0.12,
   dim = 0.35,
-  autoplay = 'drift',
-  speed = 0.14,
-  interval = 4,
   scrollDriven = true,
   className = '',
 }) => {
@@ -52,80 +44,51 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
 
-  // Active floating index (can be fractional during smooth transitions)
   const [currentIndex, setCurrentIndex] = useState<number>(startIndex);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartIndex, setDragStartIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(1200);
 
-  // Measure viewport size for responsive 3D radius and panel widths
+  // Measure viewport size for responsive panel sizes
   useEffect(() => {
-    const updateWidth = () => {
-      setViewportWidth(window.innerWidth);
-    };
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Scroll-driven horizontal movement:
-  // Tracks scroll progress through the parent section
+  // Panel sizing: aspect ratio ~ 1.25 to 1.3 matching reference video
+  const isMobile = viewportWidth < 640;
+  const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
+  const panelWidth = isMobile ? 290 : isTablet ? 360 : 420;
+  const panelHeight = Math.round(panelWidth / 1.28); // e.g. 420 / 1.28 = 328px
+
+  // Scroll-linked horizontal movement:
+  // As the user scrolls vertically through the parent section, the carousel moves horizontally
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
-  const scrollIndexRaw = useTransform(scrollYProgress, [0, 1], [0, items.length - 1]);
-  const smoothScrollIndex = useSpring(scrollIndexRaw, {
-    stiffness: 90,
-    damping: 24,
+  const scrollTargetIndex = useTransform(scrollYProgress, [0, 1], [0, items.length - 1]);
+  const smoothIndex = useSpring(scrollTargetIndex, {
+    stiffness: 85,
+    damping: 22,
     mass: 0.35,
   });
 
-  // Sync scroll progress with currentIndex when scrollDriven is active
   useEffect(() => {
     if (!scrollDriven || shouldReduceMotion) return;
-    const unsubscribe = smoothScrollIndex.on('change', (latest) => {
+    const unsub = smoothIndex.on('change', (val) => {
       if (!isDragging) {
-        setCurrentIndex(latest);
+        setCurrentIndex(val);
       }
     });
-    return () => unsubscribe();
-  }, [smoothScrollIndex, scrollDriven, isDragging, shouldReduceMotion]);
+    return () => unsub();
+  }, [smoothIndex, scrollDriven, isDragging, shouldReduceMotion]);
 
-  // Autoplay drift or step behavior (pauses when user hovers or drags)
-  useEffect(() => {
-    if (autoplay === 'off' || isHovered || isDragging || scrollDriven || shouldReduceMotion) return;
-
-    let rafId: number;
-    let lastTime = performance.now();
-
-    if (autoplay === 'drift') {
-      const stepDrift = (time: number) => {
-        const delta = (time - lastTime) / 1000;
-        lastTime = time;
-        setCurrentIndex((prev) => {
-          const next = prev + speed * delta;
-          if (next >= items.length) return 0;
-          if (next < 0) return items.length - 1;
-          return next;
-        });
-        rafId = requestAnimationFrame(stepDrift);
-      };
-      rafId = requestAnimationFrame(stepDrift);
-    } else if (autoplay === 'step') {
-      const timer = setInterval(() => {
-        setCurrentIndex((prev) => (Math.round(prev) + 1) % items.length);
-      }, interval * 1000);
-      return () => clearInterval(timer);
-    }
-
-    return () => cancelAnimationFrame(rafId);
-  }, [autoplay, speed, interval, isHovered, isDragging, scrollDriven, shouldReduceMotion, items.length]);
-
-  // Touch and mouse drag handlers
+  // Pointer drag gestures
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
     setDragStartX(e.clientX);
@@ -136,17 +99,16 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
     const deltaX = e.clientX - dragStartX;
-    // Map pixels dragged to card indices (approx 360px per card)
-    const cardPx = viewportWidth < 640 ? 280 : 360;
-    const newIndex = dragStartIndex - deltaX / cardPx;
-    setCurrentIndex(Math.max(-0.5, Math.min(items.length - 0.5, newIndex)));
+    const pxPerCard = panelWidth + gap;
+    const newIdx = dragStartIndex - deltaX / pxPerCard;
+    setCurrentIndex(Math.max(-0.2, Math.min(items.length - 0.8, newIdx)));
   };
 
   const handlePointerUp = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    // Snap to nearest integer on release
-    setCurrentIndex((prev) => Math.round(prev));
+    // Snap to nearest integer
+    setCurrentIndex((prev) => Math.max(0, Math.min(items.length - 1, Math.round(prev))));
   };
 
   const goToNext = useCallback(() => {
@@ -157,37 +119,32 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     setCurrentIndex((prev) => Math.max(0, Math.round(prev) - 1));
   }, []);
 
-  // Panel sizing & responsive geometry
-  const isMobile = viewportWidth < 640;
-  const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
-  const panelWidth = isMobile ? 280 : isTablet ? 320 : 360;
-  const panelHeight = isMobile ? 420 : 470;
-
-  // Curvature & cylindrical geometry
-  // Cylinder radius R: larger radius creates a gentler curve; smaller radius bends tighter
-  const baseRadius = isMobile ? 650 : isTablet ? 850 : 1050;
-  const radiusCylinder = baseRadius / Math.max(0.2, curvature);
-  const angleStepDeg = (panelWidth + gap) / (radiusCylinder * (Math.PI / 180));
-
-  // Perspective calculation
+  // 3D Geometry calculations matching reference video
+  // Concave curve: Radius R forms a cylinder curving around the viewer
+  const baseRadius = isMobile ? 680 : isTablet ? 880 : 1080;
+  const cylinderRadius = baseRadius / Math.max(0.3, curvature);
+  // Angular step between adjacent panels in degrees
+  const angleStepDeg = ((panelWidth + gap) / cylinderRadius) * (180 / Math.PI);
+  // Perspective distance
   const perspectivePx = distance * panelHeight;
+
+  // Active rounded index for counter and caption focus
+  const activeRoundedIdx = Math.max(0, Math.min(items.length - 1, Math.round(currentIndex)));
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full select-none ${className}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className={`relative w-full select-none overflow-hidden ${className}`}
     >
-      {/* 3D Stage Viewport */}
+      {/* 3D Perspective Stage Viewport */}
       <div
-        className="relative w-full overflow-hidden py-10 sm:py-16 flex flex-col items-center justify-center"
+        className="relative w-full pt-4 pb-2 sm:pt-6 flex flex-col items-center justify-center"
         style={{
           perspective: `${perspectivePx}px`,
           perspectiveOrigin: '50% 50%',
         }}
       >
-        {/* Curved 3D Gallery Stage */}
+        {/* Curved 3D Gallery Drum */}
         <div
           ref={trackRef}
           onPointerDown={handlePointerDown}
@@ -200,217 +157,179 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
             height: `${panelHeight}px`,
             transformStyle: 'preserve-3d',
             transform: `rotateX(${tilt}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.25s ease-out',
+            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
           }}
         >
           {items.map((item, index) => {
             const delta = index - currentIndex;
-            // Angle around the cylinder in degrees
             const angleDeg = delta * angleStepDeg;
-            const angleRad = angleDeg * (Math.PI / 180);
+            const angleRad = (angleDeg * Math.PI) / 180;
 
-            // Inward-curving concave cylinder coordinates:
-            // Center is at X = 0, Z = 0.
-            // As angle moves away from 0, X spreads along the sine curve,
-            // and Z recedes backwards along (cos(angle) - 1), while rotateY faces inward to the viewer.
-            const x = radiusCylinder * Math.sin(angleRad);
-            const z = radiusCylinder * (Math.cos(angleRad) - 1);
+            // Mathematical Concave Cylinder Transformation:
+            // Center is at (0, 0). Side cards curve FORWARD towards viewer (Z > 0)
+            // and turn their faces inward to the center (rotateY = -angleDeg)
+            const x = cylinderRadius * Math.sin(angleRad);
+            const z = cylinderRadius * (1 - Math.cos(angleRad)) * 0.62;
             const rotateY = -angleDeg;
 
-            // Visual dimming & scaling
+            // Visual dimming and edge fading matching reference video
             const absDelta = Math.abs(delta);
-            const cardScale = Math.max(0.78, 1 - absDelta * 0.06);
-            const cardOpacity = Math.max(0.2, 1 - Math.min(1, absDelta * dim * 0.8));
-            const cardBrightness = Math.max(0.6, 1 - Math.min(0.4, absDelta * 0.15));
-            const zIndex = Math.round(100 - absDelta * 10);
+            const cardOpacity = Math.max(0.2, 1 - Math.min(0.85, absDelta * dim * 0.75));
+            const cardBrightness = Math.max(0.65, 1 - Math.min(0.35, absDelta * 0.12));
+            const zIndex = Math.round(100 - absDelta * 8);
 
-            // Hide cards that curve beyond visual perimeter
-            if (absDelta > 3.8) return null;
+            // Caption visibility under each card
+            const captionOpacity = Math.max(0, 1 - absDelta * 1.35);
+
+            // Hide cards beyond 3.8 panels to keep performance buttery smooth
+            if (absDelta > 3.9) return null;
 
             return (
               <div
                 key={item.id}
                 onClick={(e) => {
-                  if (Math.abs(delta) > 0.4) {
+                  if (absDelta > 0.4) {
                     e.preventDefault();
                     setCurrentIndex(index);
                   }
                 }}
-                className="absolute inset-0 flex flex-col group will-change-transform"
+                className="absolute inset-0 flex flex-col items-center group will-change-transform"
                 style={{
                   width: `${panelWidth}px`,
                   height: `${panelHeight}px`,
-                  transform: `translate3d(${x}px, 0px, ${z}px) rotateY(${rotateY}deg) scale(${cardScale})`,
+                  transform: `translate3d(${x}px, 0px, ${z}px) rotateY(${rotateY}deg)`,
                   opacity: cardOpacity,
                   filter: `brightness(${cardBrightness})`,
                   zIndex,
                   transformStyle: 'preserve-3d',
                   transition: isDragging
                     ? 'none'
-                    : 'transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease-out, filter 0.3s ease-out',
+                    : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease-out',
                 }}
               >
-                {/* Main 3D Card Body */}
-                <div
-                  className="relative w-full h-full rounded-2xl sm:rounded-3xl bg-white border border-brand-border/90 shadow-card hover:shadow-card-hover overflow-hidden flex flex-col transition-all duration-300"
+                {/* 3D Depth Card (Full-Bleed Image Panel) */}
+                <Link
+                  to={item.link}
+                  className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
                   style={{
                     borderRadius: `${radius}px`,
+                    boxShadow: '0 20px 45px -12px rgba(20, 39, 68, 0.22), 0 8px 16px -4px rgba(20, 39, 68, 0.12)',
                   }}
                 >
-                  {/* Top 3D Showcase Image with Brand Stamp */}
-                  <div className="relative w-full h-48 sm:h-52 bg-gradient-to-br from-brand-bg-alt to-brand-blue-light/30 overflow-hidden shrink-0">
+                  {/* Full-bleed 3D Render Image */}
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
+                  />
+
+                  {/* Subtle Top Gradient for Contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/30 pointer-events-none" />
+
+                  {/* Top-Left USolve Logo Watermark */}
+                  <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-navy/80 backdrop-blur-md border border-white/20 shadow-sm text-white">
                     <img
-                      src={item.image}
-                      alt={item.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 select-none pointer-events-none"
+                      src="/assets/brand/logo/logo-usolve-transparent.png"
+                      alt="USolve"
+                      className="w-4 h-4 object-contain brightness-0 invert"
                     />
-
-                    {/* Subtle Gradient Overlay for depth */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
-
-                    {/* USolve Official Watermark Badge */}
-                    <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-navy/85 backdrop-blur-md border border-white/20 shadow-sm text-white">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse" />
-                      <span className="text-[10px] font-bold tracking-wide font-heading">USolve 3D</span>
-                    </div>
-
-                    {/* Category / Capability Pill */}
-                    <div className="absolute top-3 right-3 z-10">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/95 text-brand-navy border border-brand-border/80 shadow-xs uppercase tracking-wider">
-                        {item.badge}
-                      </span>
-                    </div>
-
-                    {/* Card Title overlaid on bottom of image for sleek contrast */}
-                    <div className="absolute bottom-3 left-3 right-3 z-10">
-                      <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight drop-shadow-md line-clamp-1">
-                        {item.title}
-                      </h3>
-                    </div>
+                    <span className="text-[11px] font-bold tracking-wider font-heading">USolve</span>
                   </div>
 
-                  {/* Card Content & Features */}
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between bg-white">
-                    <div>
-                      <p className="text-xs sm:text-sm text-brand-slate line-clamp-2 leading-relaxed mb-3">
-                        {item.description}
-                      </p>
-
-                      {/* Feature Pills */}
-                      {item.features && item.features.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {item.features.slice(0, 2).map((feat, fIdx) => (
-                            <span
-                              key={fIdx}
-                              className="text-[10px] font-semibold text-brand-navy bg-brand-bg-alt px-2 py-0.5 rounded border border-brand-border/70"
-                            >
-                              {feat}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* CTA Link to dedicated service section */}
-                    <div className="pt-3 border-t border-brand-border/60 flex items-center justify-between">
-                      <Link
-                        to={item.link}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue hover:text-brand-blue-hover transition-colors group-hover:translate-x-0.5 duration-150"
-                      >
-                        <span>Explore Capabilities</span>
-                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                      </Link>
-
-                      <span className="text-[11px] font-mono text-brand-slate/60 font-medium">
-                        0{index + 1}
-                      </span>
-                    </div>
+                  {/* Top-Right Category Badge */}
+                  <div className="absolute top-3.5 right-3.5 z-10">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/95 text-brand-navy border border-white/40 shadow-sm backdrop-blur-sm">
+                      {item.badge}
+                    </span>
                   </div>
-                </div>
+
+                  {/* Bottom View Capability Action Pill (visible on hover) */}
+                  <div className="absolute bottom-3.5 right-3.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-blue text-white shadow-md">
+                      <span>Explore</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </div>
+                </Link>
 
                 {/* React Bits Pro Floor Reflection Effect */}
                 {reflection > 0 && (
                   <div
                     aria-hidden="true"
-                    className="absolute top-full left-0 right-0 overflow-hidden pointer-events-none select-none"
+                    className="absolute top-full left-0 right-0 overflow-hidden pointer-events-none select-none mt-2"
                     style={{
-                      height: `${panelHeight * 0.35}px`,
-                      transform: 'scaleY(-1) translateY(-4px)',
-                      opacity: reflection * (1 - absDelta * 0.2),
-                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
-                      filter: 'blur(1.5px)',
+                      height: `${panelHeight * 0.38}px`,
+                      transform: 'scaleY(-1)',
+                      opacity: reflection * (1 - absDelta * 0.22),
+                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 80%)',
+                      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 80%)',
+                      filter: 'blur(2px)',
                     }}
                   >
                     <div
-                      className="w-full h-full rounded-2xl bg-white border border-brand-border/40 overflow-hidden flex flex-col opacity-60"
+                      className="w-full h-full rounded-[18px] sm:rounded-[22px] overflow-hidden"
                       style={{ borderRadius: `${radius}px` }}
                     >
                       <img
                         src={item.image}
                         alt=""
-                        className="w-full h-36 object-cover object-center"
+                        className="w-full h-full object-cover object-center"
                       />
                     </div>
                   </div>
                 )}
+
+                {/* Caption Directly Under Card (Identical to Reference Video) */}
+                <div
+                  className="w-full text-center mt-5 sm:mt-6 select-none pointer-events-none transition-opacity duration-200"
+                  style={{
+                    opacity: captionOpacity,
+                    transform: `translateY(${absDelta * 4}px)`,
+                  }}
+                >
+                  <h3 className="text-base sm:text-lg font-bold text-brand-navy tracking-tight drop-shadow-xs line-clamp-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-brand-slate mt-1 line-clamp-1 max-w-sm mx-auto">
+                    {item.subtitle}
+                  </p>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* Interactive Navigation Controls */}
-        <div className="relative z-20 mt-12 sm:mt-16 flex items-center justify-center gap-4 sm:gap-6">
+        {/* Navigation Controls (< 04 / 08 >) Exact Style as Reference Video */}
+        <div className="relative z-30 mt-20 sm:mt-24 flex items-center justify-center gap-4 sm:gap-6">
           {/* Previous Button */}
           <button
             type="button"
             onClick={goToPrev}
-            disabled={currentIndex <= 0.1}
+            disabled={activeRoundedIdx <= 0}
             aria-label="Previous service"
-            className="w-10 h-10 rounded-full bg-white border border-brand-border shadow-sm hover:shadow-md flex items-center justify-center text-brand-navy hover:text-brand-blue hover:border-brand-blue/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-brand-border/90 shadow-sm hover:shadow hover:bg-brand-bg-alt flex items-center justify-center text-brand-navy hover:text-brand-blue disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Pagination Indicators / Navigation Dots */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {items.map((_, dotIdx) => {
-              const isActive = Math.round(currentIndex) === dotIdx;
-              return (
-                <button
-                  key={dotIdx}
-                  type="button"
-                  onClick={() => setCurrentIndex(dotIdx)}
-                  aria-label={`Jump to service ${dotIdx + 1}`}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    isActive
-                      ? 'w-7 sm:w-8 bg-brand-blue shadow-xs'
-                      : 'w-2 bg-brand-border hover:bg-brand-slate/40'
-                  }`}
-                />
-              );
-            })}
+          {/* Counter (e.g. 04 / 08) */}
+          <div className="font-mono text-xs sm:text-sm font-semibold text-brand-slate tracking-widest px-2">
+            <span>{String(activeRoundedIdx + 1).padStart(2, '0')}</span>
+            <span className="mx-1.5 text-brand-slate/40">/</span>
+            <span>{String(items.length).padStart(2, '0')}</span>
           </div>
 
           {/* Next Button */}
           <button
             type="button"
             onClick={goToNext}
-            disabled={currentIndex >= items.length - 1.1}
+            disabled={activeRoundedIdx >= items.length - 1}
             aria-label="Next service"
-            className="w-10 h-10 rounded-full bg-white border border-brand-border shadow-sm hover:shadow-md flex items-center justify-center text-brand-navy hover:text-brand-blue hover:border-brand-blue/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-brand-border/90 shadow-sm hover:shadow hover:bg-brand-bg-alt flex items-center justify-center text-brand-navy hover:text-brand-blue disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
-        </div>
-
-        {/* Scroll Instruction Hint Pill */}
-        <div className="mt-4 text-center">
-          <p className="text-[11px] font-medium text-brand-slate/70 tracking-wide inline-flex items-center gap-1.5 bg-brand-bg-alt/80 px-3 py-1 rounded-full border border-brand-border/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
-            <span>Scroll or drag horizontally to rotate curved gallery</span>
-          </p>
         </div>
       </div>
     </div>
