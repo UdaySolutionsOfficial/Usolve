@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { useScroll, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -23,8 +23,7 @@ export interface ConcaveCarouselProps {
   radius?: number; // corner radius in px, default 20
   reflection?: number; // reflection opacity, default 0.14
   dim?: number; // edge dimming factor, default 0.35
-  autoplay?: boolean; // natural automatic smooth moving loop
-  speed?: number; // continuous drift speed (panels/sec)
+  scrollTargetRef?: React.RefObject<HTMLElement | null>;
   className?: string;
 }
 
@@ -38,23 +37,16 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   radius = 20,
   reflection = 0.14,
   dim = 0.35,
-  autoplay = true,
-  speed = 0.12, // Silky smooth natural drift: ~8s per card transition
+  scrollTargetRef,
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
 
-  const [currentIndex, setCurrentIndex] = useState<number>(startIndex);
-  const [isDragging, setIsDragging] = useState(false);
-  const isDraggingRef = useRef(false);
-  const isHoveredRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartIndexRef = useRef(0);
-  const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
+  const totalItems = items.length;
 
-  // Initialize with exact window dimensions
+  // Viewport dimensions
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
@@ -72,82 +64,77 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const totalItems = items.length;
-
-  // INCREASED HEIGHT & CARD SIZING:
-  // Taller panel height with 1.26 aspect ratio ensures the 3D artwork inside
-  // is 100% visible vertically with NO top/bottom cropping.
+  // SUBSTANTIALLY INCREASED CARD HEIGHT:
+  // Taller portrait/semi-square aspect ratio (~1.12) ensures images are
+  // fully visible with plenty of vertical height and zero cropping.
   let panelHeight: number;
-  if (viewportHeight < 620) {
-    panelHeight = 245;
-  } else if (viewportHeight < 720) {
-    panelHeight = 290;
-  } else if (viewportHeight < 850) {
-    panelHeight = 330;
+  if (viewportHeight < 640) {
+    panelHeight = 260;
+  } else if (viewportHeight < 740) {
+    panelHeight = 310;
+  } else if (viewportHeight < 880) {
+    panelHeight = 350;
   } else if (viewportHeight < 1050) {
-    panelHeight = 365;
+    panelHeight = 385;
   } else {
-    panelHeight = 400;
+    panelHeight = 420;
   }
 
-  // Mobile constraint
+  // Mobile width constraint
   if (viewportWidth < 500) {
-    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.26));
+    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.12));
   }
 
-  // 1.26 aspect ratio perfectly matches the 1200x896 source images vertically
-  const aspect = 1.26;
+  // 1.12 aspect ratio gives tall, prominent cards where full artwork is visible
+  const aspect = 1.12;
   const panelWidth = Math.round(panelHeight * aspect);
 
-  // NATURAL AUTOMATIC SMOOTH MOVING LOOP (Autoplay Drift)
-  // Buttery smooth requestAnimationFrame loop that continuously drifts across cards
-  useEffect(() => {
-    if (!autoplay || shouldReduceMotion) return;
+  // SCROLL-DRIVEN BIDIRECTIONAL CONTROL:
+  // Scroll down moves 1 -> 2 -> ... -> n, then scrolls away to next content.
+  // Scroll up reverses n -> n-1 -> ... -> 1, then scrolls back up to previous content.
+  const targetRef = scrollTargetRef || containerRef;
+  const { scrollYProgress } = useScroll({
+    target: targetRef as React.RefObject<HTMLElement>,
+    offset: ['start start', 'end end'],
+  });
 
-    let animId: number;
-    let lastTime = performance.now();
+  // Map scroll progress [0, 1] directly to [0, totalItems - 1]
+  const scrollIndex = useTransform(scrollYProgress, [0, 1], [0, totalItems - 1]);
 
-    const loop = (now: number) => {
-      const dt = Math.min(0.1, (now - lastTime) / 1000); // capped delta time in seconds
-      lastTime = now;
+  // Manual arrow clicks and drag offset
+  const [manualOffset, setManualOffset] = useState<number>(startIndex);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartCurrentRef = useRef(0);
 
-      if (!isDraggingRef.current && !isHoveredRef.current) {
-        setCurrentIndex((prev) => prev + speed * dt);
-      }
+  // Active continuous index combining scroll and manual interaction
+  const [currentIndex, setCurrentIndex] = useState<number>(startIndex);
 
-      animId = requestAnimationFrame(loop);
-    };
+  // Smooth spring for buttery motion
+  const smoothScrollIndex = useSpring(scrollIndex, {
+    stiffness: 85,
+    damping: 24,
+    mass: 0.28,
+  });
 
-    animId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animId);
-  }, [autoplay, speed, shouldReduceMotion]);
-
-  // ON-SCROLL SYNC:
-  // When the user scrolls vertically, the carousel smoothly advances with the scroll
+  // Sync scroll position with current index when not dragging
   useEffect(() => {
     if (shouldReduceMotion) return;
-
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      const deltaY = currentY - lastScrollYRef.current;
-      lastScrollYRef.current = currentY;
-
-      // Only advance if there is scroll movement and not currently dragging
-      if (Math.abs(deltaY) > 0.5 && !isDraggingRef.current) {
-        setCurrentIndex((prev) => prev + deltaY * 0.0028);
+    const unsub = smoothScrollIndex.on('change', (val) => {
+      if (!isDraggingRef.current) {
+        setCurrentIndex(val + manualOffset);
       }
-    };
+    });
+    return () => unsub();
+  }, [smoothScrollIndex, manualOffset, shouldReduceMotion]);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [shouldReduceMotion]);
-
-  // Pointer drag gestures with infinite wrapping
+  // Pointer drag gestures
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
-    dragStartIndexRef.current = currentIndex;
+    dragStartCurrentRef.current = currentIndex;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
@@ -155,7 +142,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     if (!isDraggingRef.current) return;
     const deltaX = e.clientX - dragStartXRef.current;
     const pxPerCard = panelWidth + gap;
-    const newIdx = dragStartIndexRef.current - deltaX / pxPerCard;
+    const newIdx = dragStartCurrentRef.current - deltaX / pxPerCard;
     setCurrentIndex(newIdx);
   };
 
@@ -163,23 +150,27 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     if (!isDraggingRef.current) return;
     setIsDragging(false);
     isDraggingRef.current = false;
-    // Smoothly snap to nearest integer card
-    setCurrentIndex((prev) => Math.round(prev));
+    // Snap cleanly to nearest integer
+    const target = Math.round(currentIndex);
+    const scrollVal = smoothScrollIndex.get();
+    setManualOffset(target - scrollVal);
+    setCurrentIndex(target);
   };
 
-  // Button navigation with endless loop
+  // Arrow button clicks: smoothly moves cards forward or backward
   const goToNext = useCallback(() => {
+    setManualOffset((prev) => prev + 1);
     setCurrentIndex((prev) => Math.round(prev) + 1);
   }, []);
 
   const goToPrev = useCallback(() => {
+    setManualOffset((prev) => prev - 1);
     setCurrentIndex((prev) => Math.round(prev) - 1);
   }, []);
 
   // 3D Geometry calculations matching React Bits Pro Concave Carousel:
   const stepAngleDeg = 28 * Math.max(0.65, curvature);
   const stepAngleRad = (stepAngleDeg * Math.PI) / 180;
-  // Circumradius for exact physical gap between adjacent curved panels
   const cylinderRadius = Math.round(
     (panelWidth + gap) / (2 * Math.sin(stepAngleRad / 2 || 0.1))
   );
@@ -190,17 +181,11 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     ((Math.round(currentIndex) % totalItems) + totalItems) % totalItems;
 
   // Clear height for navigation controls below floor reflection and caption
-  const navMarginTop = Math.round(panelHeight * 0.22 + 34);
+  const navMarginTop = Math.round(panelHeight * 0.2 + 30);
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => {
-        isHoveredRef.current = true;
-      }}
-      onMouseLeave={() => {
-        isHoveredRef.current = false;
-      }}
       className={`relative w-full select-none ${className}`}
     >
       {/* 3D Perspective Stage Viewport */}
@@ -229,7 +214,6 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
         >
           {items.map((item, index) => {
             // Endless Loop Wrapping Math (1-n-1 continuous cylinder):
-            // Compute shortest circular offset on the N-card drum in range [-N/2, N/2)
             const normCurrent = ((currentIndex % totalItems) + totalItems) % totalItems;
             let delta = index - normCurrent;
             while (delta > totalItems / 2) delta -= totalItems;
@@ -237,29 +221,24 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
             const absDelta = Math.abs(delta);
 
-            // Hide cards on the far rear side (> 3.2 panels) to keep rendering smooth & clean
+            // Hide cards on the far rear side (> 3.2 panels)
             if (absDelta > 3.2) return null;
 
             const angleDeg = delta * stepAngleDeg;
             const angleRad = (angleDeg * Math.PI) / 180;
 
             // Mathematical Concave Cylinder Transformation:
-            // Center is at (0, 0, 0).
-            // Side cards curve forward along the cylinder arc (Z > 0)
-            // and turn their faces inward to the center (rotateY = -angleDeg)
             const x = cylinderRadius * Math.sin(angleRad);
             const z = cylinderRadius * (1 - Math.cos(angleRad)) * 0.6;
             const rotateY = -angleDeg;
 
-            // Visual Depth, dimming, and edge fading matching reference video:
-            // Center card is large (1.02), prominent, crisp, and elevated.
+            // Visual Depth, dimming, and edge fading
             const scale = Math.max(0.82, 1.02 - absDelta * 0.055);
             const cardOpacity = Math.max(0, 1 - Math.pow(absDelta / 3.2, 2));
             const cardBrightness = Math.max(0.65, 1 - Math.min(0.35, absDelta * dim * 0.45));
-            // Keep center card strictly on top of overlapping side panels
             const zIndex = Math.round(60 - absDelta * 10);
 
-            // Active caption visibility under active card (fades rapidly on side cards)
+            // Active caption visibility under active card
             const captionOpacity = Math.max(0, 1 - absDelta * 2.5);
 
             return (
@@ -268,6 +247,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                 onClick={(e) => {
                   if (absDelta > 0.4) {
                     e.preventDefault();
+                    setManualOffset((prev) => prev + delta);
                     setCurrentIndex((prev) => prev + delta);
                   }
                 }}
@@ -285,7 +265,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease-out, filter 0.22s ease-out',
                 }}
               >
-                {/* 3D Depth Card: 100% PURE, CLEAN FULL-BLEED ARTWORK (TALLER HEIGHT FOR FULL IMAGE VIEW) */}
+                {/* 3D Depth Card: TALL, PROMINENT FULL-BLEED ARTWORK */}
                 <Link
                   to={item.link}
                   className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-transform duration-300 group-hover:scale-[1.02] border border-white/20 bg-white"
@@ -297,7 +277,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                         : '0 16px 36px -12px rgba(20, 39, 68, 0.22)',
                   }}
                 >
-                  {/* Full-bleed 3D Render Image - Tall, uncropped, 100% visible vertical view */}
+                  {/* Full-bleed 3D Render Image - Tall uncropped view */}
                   <img
                     src={item.image}
                     alt={item.title}
@@ -312,7 +292,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     aria-hidden="true"
                     className="absolute top-full left-0 right-0 overflow-hidden pointer-events-none select-none mt-1 sm:mt-1.5"
                     style={{
-                      height: `${Math.round(panelHeight * 0.22)}px`,
+                      height: `${Math.round(panelHeight * 0.2)}px`,
                       transform: 'scaleY(-1)',
                       opacity: reflection * Math.max(0, 1 - absDelta * 0.25),
                       maskImage:
@@ -335,7 +315,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                   </div>
                 )}
 
-                {/* Caption Directly Under Card (Identical to Reference Video) */}
+                {/* Caption Directly Under Card */}
                 <div
                   className="w-full text-center mt-3 sm:mt-4 select-none pointer-events-none transition-opacity duration-200"
                   style={{

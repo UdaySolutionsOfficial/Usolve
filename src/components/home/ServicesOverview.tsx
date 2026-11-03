@@ -86,7 +86,7 @@ export const ServicesOverview: React.FC = () => {
       ref={sectionRef}
       id="services-showcase"
       aria-label="Digital Services Built for Business Utility"
-      className="relative min-h-[220vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70"
+      className="relative min-h-[280vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70"
     >
       {/* Sticky Viewport Container - Perfectly sized to fit any Windows screen, laptop, or mobile without clipping */}
       <div className="sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] max-h-[100dvh] flex flex-col justify-between py-2 sm:py-3 px-4 overflow-hidden">
@@ -116,8 +116,7 @@ export const ServicesOverview: React.FC = () => {
             radius={20} // Panel corner radius
             reflection={0.14} // Studio floor reflection
             dim={0.35} // Edge dimming
-            autoplay={true} // Natural automatic smooth moving loop
-            speed={0.12} // Gentle continuous drift
+            scrollTargetRef={sectionRef}
           />
         </div>
 
