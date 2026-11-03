@@ -110,11 +110,11 @@ export const ServicesOverview: React.FC = () => {
             items={servicesData}
             startIndex={0}
             curvature={0.72} // Inward curved drum
-            distance={3.8} // Perspective depth
+            distance={3.6} // Perspective depth
             tilt={0} // Straight-on view
-            gap={16} // Pixel gap
-            radius={18} // Panel corner radius
-            reflection={0.12} // Studio floor reflection
+            gap={24} // Pixel gap
+            radius={20} // Panel corner radius
+            reflection={0.14} // Studio floor reflection
             dim={0.35} // Edge dimming
             scrollDriven={true}
             scrollTargetRef={sectionRef}
