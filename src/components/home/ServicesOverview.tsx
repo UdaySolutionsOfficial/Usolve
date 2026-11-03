@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { SectionHeading } from '../common/SectionHeading';
 import { Button } from '../common/Button';
 import { ConcaveCarousel, ConcaveCarouselItem } from '../common/ConcaveCarousel';
 
@@ -57,7 +56,7 @@ export const ServicesOverview: React.FC = () => {
       id: 'ai-business-systems',
       title: 'AI Systems & Automation',
       subtitle: 'Conversational AI voice agents, smart pipelines & data intelligence',
-      badge: 'AI & Machine Learning',
+      badge: 'AI & Automation',
       category: 'Automation',
       image: '/assets/services/service-ai-systems.jpg',
       link: '/services#ai-business-systems',
@@ -87,44 +86,49 @@ export const ServicesOverview: React.FC = () => {
       ref={sectionRef}
       id="services-showcase"
       aria-label="Digital Services Built for Business Utility"
-      className="relative min-h-[170vh] md:min-h-[210vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70 overflow-visible"
+      className="relative min-h-[220vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70"
     >
-      {/* Sticky Viewport Container */}
-      <div className="sticky top-12 sm:top-14 h-[calc(100vh-3rem)] sm:h-[calc(100vh-3.5rem)] flex flex-col justify-between py-6 sm:py-8 overflow-hidden">
-        {/* Section Heading */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center shrink-0">
-          <SectionHeading
-            eyebrow="Our Core Capabilities"
-            title="Digital Services Built for Business Utility"
-            description="We focus on creating solutions that directly help businesses communicate with customers, streamline operations, and build confidence online."
-            className="mb-0"
-          />
+      {/* Sticky Viewport Container - Perfectly sized to fit any Windows screen, laptop, or mobile without clipping */}
+      <div className="sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] max-h-[100dvh] flex flex-col justify-between py-2 sm:py-3 px-4 overflow-hidden">
+        {/* Section Heading - Sleek, compact & responsive */}
+        <div className="max-w-4xl mx-auto px-4 text-center shrink-0 pt-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 mb-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse" />
+            <span>Our Core Capabilities</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight leading-tight">
+            Digital Services Built for Business Utility
+          </h2>
+          <p className="text-xs sm:text-sm text-brand-slate max-w-xl mx-auto mt-0.5 line-clamp-1 sm:line-clamp-2">
+            We build practical digital systems that streamline business operations, engage customers, and drive measurable growth.
+          </p>
         </div>
 
-        {/* 3D Concave Carousel Drum Wall (Pixel-Perfect to React Bits Pro) */}
-        <div className="w-full flex-1 flex items-center justify-center relative z-10 my-auto">
+        {/* 3D Concave Carousel Drum Wall - Endless 1-n-1 loop with floor reflections & depth */}
+        <div className="w-full flex-1 flex items-center justify-center relative z-10 my-auto py-1">
           <ConcaveCarousel
             items={servicesData}
-            startIndex={2}
+            startIndex={0}
             curvature={0.72} // Inward curved drum
             distance={3.8} // Perspective depth
             tilt={0} // Straight-on view
             gap={16} // Pixel gap
-            radius={20} // Panel corner radius
-            reflection={0.12} // Floor reflection
+            radius={18} // Panel corner radius
+            reflection={0.12} // Studio floor reflection
             dim={0.35} // Edge dimming
             scrollDriven={true}
+            scrollTargetRef={sectionRef}
           />
         </div>
 
         {/* Bottom CTA Button */}
-        <div className="text-center shrink-0 z-20 pb-2">
+        <div className="text-center shrink-0 z-20 pb-1">
           <Button
             to="/services"
             variant="outline"
-            size="md"
-            icon={<ArrowRight className="w-4 h-4" />}
-            className="shadow-xs hover:shadow-md bg-white/95 backdrop-blur-md"
+            size="sm"
+            icon={<ArrowRight className="w-3.5 h-3.5" />}
+            className="shadow-xs hover:shadow-md bg-white/95 backdrop-blur-md text-xs sm:text-sm py-1.5 px-4"
           >
             Explore All 13 Services & Detailed Capabilities
           </Button>
