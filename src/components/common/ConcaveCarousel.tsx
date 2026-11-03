@@ -23,6 +23,8 @@ export interface ConcaveCarouselProps {
   radius?: number; // corner radius in px, default 20
   reflection?: number; // reflection opacity, default 0.14
   dim?: number; // edge dimming factor, default 0.35
+  autoplay?: boolean; // gentle automatic smooth drift when idle
+  speed?: number; // drift speed in panels per second
   scrollTargetRef?: React.RefObject<HTMLElement | null>;
   className?: string;
 }
@@ -37,6 +39,8 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   radius = 20,
   reflection = 0.14,
   dim = 0.35,
+  autoplay = true,
+  speed = 0.1, // Smooth, elegant ambient movement: ~10s per card transition
   scrollTargetRef,
   className = '',
 }) => {
@@ -65,8 +69,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   }, []);
 
   // SUBSTANTIALLY INCREASED CARD HEIGHT:
-  // Taller portrait/semi-square aspect ratio (~1.12) ensures images are
-  // fully visible with plenty of vertical height and zero cropping.
+  // Taller aspect ratio (~1.12) ensures images are fully visible with zero cropping
   let panelHeight: number;
   if (viewportHeight < 640) {
     panelHeight = 260;
@@ -85,49 +88,95 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.12));
   }
 
-  // 1.12 aspect ratio gives tall, prominent cards where full artwork is visible
   const aspect = 1.12;
   const panelWidth = Math.round(panelHeight * aspect);
 
-  // SCROLL-DRIVEN BIDIRECTIONAL CONTROL:
-  // Scroll down moves 1 -> 2 -> ... -> n, then scrolls away to next content.
-  // Scroll up reverses n -> n-1 -> ... -> 1, then scrolls back up to previous content.
+  // SCROLL-DRIVEN BIDIRECTIONAL CONTROL
   const targetRef = scrollTargetRef || containerRef;
   const { scrollYProgress } = useScroll({
     target: targetRef as React.RefObject<HTMLElement>,
     offset: ['start start', 'end end'],
   });
 
-  // Map scroll progress [0, 1] directly to [0, totalItems - 1]
   const scrollIndex = useTransform(scrollYProgress, [0, 1], [0, totalItems - 1]);
 
-  // Manual arrow clicks and drag offset
+  // Interaction & drift tracking
   const [manualOffset, setManualOffset] = useState<number>(startIndex);
+  const autoDriftRef = useRef<number>(0);
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
+  const isHoveredRef = useRef(false);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<number | null>(null);
   const dragStartXRef = useRef(0);
   const dragStartCurrentRef = useRef(0);
 
-  // Active continuous index combining scroll and manual interaction
+  // Active continuous index
   const [currentIndex, setCurrentIndex] = useState<number>(startIndex);
 
-  // Smooth spring for buttery motion
+  // Smooth spring for scroll motion
   const smoothScrollIndex = useSpring(scrollIndex, {
     stiffness: 85,
     damping: 24,
     mass: 0.28,
   });
 
-  // Sync scroll position with current index when not dragging
+  // Detect when user is actively scrolling page
+  useEffect(() => {
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      if (scrollTimeoutRef.current !== null) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 250);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current !== null) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Sync scroll position with current index
   useEffect(() => {
     if (shouldReduceMotion) return;
     const unsub = smoothScrollIndex.on('change', (val) => {
       if (!isDraggingRef.current) {
-        setCurrentIndex(val + manualOffset);
+        setCurrentIndex(val + manualOffset + autoDriftRef.current);
       }
     });
     return () => unsub();
   }, [smoothScrollIndex, manualOffset, shouldReduceMotion]);
+
+  // NATURAL AUTOMATIC SMOOTH MOVING LOOP (Ambient Drift when Idle)
+  // Continuously drifts through services when user is not scrolling, dragging, or hovering
+  useEffect(() => {
+    if (!autoplay || shouldReduceMotion) return;
+
+    let animId: number;
+    let lastTime = performance.now();
+
+    const loop = (now: number) => {
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (!isDraggingRef.current && !isHoveredRef.current && !isScrollingRef.current) {
+        autoDriftRef.current += speed * dt;
+        const baseScroll = smoothScrollIndex.get();
+        setCurrentIndex(baseScroll + manualOffset + autoDriftRef.current);
+      }
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [autoplay, speed, manualOffset, smoothScrollIndex, shouldReduceMotion]);
 
   // Pointer drag gestures
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -150,9 +199,9 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     if (!isDraggingRef.current) return;
     setIsDragging(false);
     isDraggingRef.current = false;
-    // Snap cleanly to nearest integer
     const target = Math.round(currentIndex);
     const scrollVal = smoothScrollIndex.get();
+    autoDriftRef.current = 0;
     setManualOffset(target - scrollVal);
     setCurrentIndex(target);
   };
@@ -168,7 +217,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     setCurrentIndex((prev) => Math.round(prev) - 1);
   }, []);
 
-  // 3D Geometry calculations matching React Bits Pro Concave Carousel:
+  // 3D Geometry calculations
   const stepAngleDeg = 28 * Math.max(0.65, curvature);
   const stepAngleRad = (stepAngleDeg * Math.PI) / 180;
   const cylinderRadius = Math.round(
@@ -180,12 +229,17 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   const activeNormalizedIdx =
     ((Math.round(currentIndex) % totalItems) + totalItems) % totalItems;
 
-  // Clear height for navigation controls below floor reflection and caption
   const navMarginTop = Math.round(panelHeight * 0.2 + 30);
 
   return (
     <div
       ref={containerRef}
+      onMouseEnter={() => {
+        isHoveredRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isHoveredRef.current = false;
+      }}
       className={`relative w-full select-none ${className}`}
     >
       {/* 3D Perspective Stage Viewport */}
@@ -213,7 +267,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
           }}
         >
           {items.map((item, index) => {
-            // Endless Loop Wrapping Math (1-n-1 continuous cylinder):
+            // Endless Loop Wrapping Math
             const normCurrent = ((currentIndex % totalItems) + totalItems) % totalItems;
             let delta = index - normCurrent;
             while (delta > totalItems / 2) delta -= totalItems;
@@ -221,24 +275,20 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
             const absDelta = Math.abs(delta);
 
-            // Hide cards on the far rear side (> 3.2 panels)
             if (absDelta > 3.2) return null;
 
             const angleDeg = delta * stepAngleDeg;
             const angleRad = (angleDeg * Math.PI) / 180;
 
-            // Mathematical Concave Cylinder Transformation:
             const x = cylinderRadius * Math.sin(angleRad);
             const z = cylinderRadius * (1 - Math.cos(angleRad)) * 0.6;
             const rotateY = -angleDeg;
 
-            // Visual Depth, dimming, and edge fading
             const scale = Math.max(0.82, 1.02 - absDelta * 0.055);
             const cardOpacity = Math.max(0, 1 - Math.pow(absDelta / 3.2, 2));
             const cardBrightness = Math.max(0.65, 1 - Math.min(0.35, absDelta * dim * 0.45));
             const zIndex = Math.round(60 - absDelta * 10);
 
-            // Active caption visibility under active card
             const captionOpacity = Math.max(0, 1 - absDelta * 2.5);
 
             return (
