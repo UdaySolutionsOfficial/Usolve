@@ -13,7 +13,6 @@ import {
   ArrowRight,
   X,
   CheckCircle2,
-  Eye,
   Code2,
   Layers,
   Smartphone,
@@ -374,16 +373,41 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     setMousePos({ x: e.clientX, y: e.clientY });
   };
 
-  // Close modal on Escape key
+  // Close modal on Escape key and automatically close when user scrolls to another section
   useEffect(() => {
     if (!activeModalItem) return;
+
+    const initialScrollY = window.scrollY;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setActiveModalItem(null);
       }
     };
+
+    const handleWindowScroll = () => {
+      // Professional UX rule: if user scrolls more than 12px, automatically close popup so the website flows smoothly
+      if (Math.abs(window.scrollY - initialScrollY) > 12) {
+        setActiveModalItem(null);
+      }
+    };
+
+    const handleWindowWheel = (e: WheelEvent) => {
+      // If user uses scroll wheel to navigate, smoothly dismiss popup
+      if (Math.abs(e.deltaY) > 20 || Math.abs(e.deltaX) > 20) {
+        setActiveModalItem(null);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    window.addEventListener('wheel', handleWindowWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleWindowScroll);
+      window.removeEventListener('wheel', handleWindowWheel);
+    };
   }, [activeModalItem]);
 
   // Clean up animation frames on unmount
@@ -792,21 +816,6 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                       <span>{item.shortTitle || item.title}</span>
                     </span>
                   </div>
-
-                  {/* Interactive Quick View Button on Card Bottom-Right */}
-                  <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-20 select-none">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveModalItem(item);
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-black/55 hover:bg-brand-blue text-white/90 hover:text-white backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-semibold transition-all active:scale-95 cursor-pointer shadow-sm"
-                    >
-                      <span>Overview</span>
-                      <Eye className="w-3 h-3 text-brand-cyan" />
-                    </button>
-                  </div>
                 </div>
 
                 {/* React Bits Pro Floor Reflection Effect */}
@@ -894,43 +903,53 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
         </div>
       </div>
 
-      {/* Service Detail Interactive Popup Modal */}
+      {/* Service Detail Interactive 3D Card Expansion Popup Modal */}
       <AnimatePresence>
         {activeModalItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            {/* Backdrop overlay */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pointer-events-auto">
+            {/* Ambient Backdrop Blur Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
               onClick={() => setActiveModalItem(null)}
-              className="fixed inset-0 bg-brand-navy/70 backdrop-blur-sm cursor-pointer"
+              className="fixed inset-0 bg-brand-navy/65 backdrop-blur-md cursor-pointer"
               aria-hidden="true"
             />
 
-            {/* Modal Dialog Card */}
+            {/* 3D Motion Graphics Expanded Card: Physically moves forward from 3D space & reveals details */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.93, y: 18 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 12 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+              initial={{ opacity: 0, scale: 0.75, y: 30, rotateX: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, scale: 0.78, y: 20, rotateX: 8 }}
+              transition={{
+                type: 'spring',
+                damping: 26,
+                stiffness: 280,
+                mass: 0.8,
+              }}
+              style={{
+                transformPerspective: 1200,
+                transformStyle: 'preserve-3d',
+              }}
               role="dialog"
               aria-modal="true"
               aria-labelledby="service-modal-title"
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-brand-border/70 overflow-hidden z-10 my-auto text-left"
+              className="relative w-full max-w-[520px] max-h-[85vh] sm:max-h-[80vh] bg-white rounded-[22px] sm:rounded-[26px] shadow-[0_30px_90px_-15px_rgba(15,35,70,0.45)] border border-white/60 overflow-hidden z-10 flex flex-col text-left my-auto"
             >
-              {/* Image Banner Header */}
-              <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-brand-navy">
+              {/* Image Banner Header: Seamless continuation of the 3D card artwork */}
+              <div className="relative h-40 sm:h-48 w-full shrink-0 overflow-hidden bg-brand-navy select-none">
                 <img
                   src={activeModalItem.image}
                   alt={activeModalItem.title}
                   className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-navy via-brand-navy/40 to-black/30" />
 
-                {/* Top Badge & Close Button */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-navy/90 text-white backdrop-blur-md border border-white/20 text-xs font-semibold shadow-sm">
+                {/* Top Header: Badge & Close Button */}
+                <div className="absolute top-3 left-3.5 right-3.5 flex items-center justify-between z-10">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-navy/90 text-white backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-semibold shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
                     <span>{activeModalItem.category || activeModalItem.badge}</span>
                   </span>
@@ -939,69 +958,71 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     type="button"
                     onClick={() => setActiveModalItem(null)}
                     aria-label="Close modal"
-                    className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer active:scale-95 border border-white/20"
+                    className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/20 hover:scale-105 active:scale-95"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Title & Subtitle */}
-                <div className="absolute bottom-3.5 left-4 right-4 z-10">
+                {/* Service Title & Subtitle pinned to banner bottom */}
+                <div className="absolute bottom-3 left-4 right-4 z-10">
                   <h3
                     id="service-modal-title"
-                    className="text-lg sm:text-xl font-bold text-white tracking-tight drop-shadow-md"
+                    className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow-md font-heading"
                   >
                     {activeModalItem.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-brand-blue-light/90 line-clamp-1 mt-0.5">
+                  <p className="text-xs sm:text-sm text-brand-blue-light font-medium line-clamp-1 mt-0.5">
                     {activeModalItem.subtitle}
                   </p>
                 </div>
               </div>
 
-              {/* Modal Body: Client-attractive, non-technical plain English */}
-              <div className="p-5 sm:p-6 space-y-4">
+              {/* Modal Body (Scrollable if height constrained on smaller screens) */}
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1">
+                {/* Client-friendly plain explanation */}
                 <p className="text-xs sm:text-sm text-brand-slate leading-relaxed">
                   {activeModalItem.summary || activeModalItem.subtitle}
                 </p>
 
+                {/* Key Business Advantages */}
                 {activeModalItem.highlights && activeModalItem.highlights.length > 0 && (
-                  <div className="pt-1">
-                    <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-brand-navy/70 mb-2">
+                  <div className="pt-0.5">
+                    <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-brand-navy/70 mb-2">
                       Key Business Advantages
                     </h4>
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5 sm:space-y-2">
                       {activeModalItem.highlights.map((highlight, hIdx) => (
-                        <li key={hIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-brand-navy">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <li key={hIdx} className="flex items-start gap-2 text-xs sm:text-sm text-brand-navy">
+                          <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0 mt-0.5" />
                           <span className="leading-snug">{highlight}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
+              </div>
 
-                {/* Modal Footer with Action Buttons */}
-                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-brand-border/60">
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalItem(null)}
-                    className="order-2 sm:order-1 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-brand-slate hover:text-brand-navy hover:bg-brand-bg-alt transition-colors cursor-pointer text-center"
-                  >
-                    Close
-                  </button>
+              {/* Bottom Action Bar */}
+              <div className="p-3.5 sm:p-4 bg-brand-bg-alt/40 border-t border-brand-border/60 shrink-0 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveModalItem(null)}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-brand-slate hover:text-brand-navy hover:bg-brand-bg-alt transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
 
-                  <Button
-                    to={activeModalItem.link}
-                    variant="primary"
-                    size="sm"
-                    icon={<ArrowRight className="w-3.5 h-3.5" />}
-                    onClick={() => setActiveModalItem(null)}
-                    className="order-1 sm:order-2 shadow-sm hover:shadow text-xs sm:text-sm py-2 px-4"
-                  >
-                    Explore Full Service Details
-                  </Button>
-                </div>
+                <Button
+                  to={activeModalItem.link}
+                  variant="primary"
+                  size="sm"
+                  icon={<ArrowRight className="w-3.5 h-3.5" />}
+                  onClick={() => setActiveModalItem(null)}
+                  className="shadow-sm hover:shadow text-xs py-2 px-4"
+                >
+                  Explore Full Service Details
+                </Button>
               </div>
             </motion.div>
           </div>
