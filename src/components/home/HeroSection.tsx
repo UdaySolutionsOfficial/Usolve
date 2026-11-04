@@ -3,18 +3,21 @@ import { ArrowRight, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { HeroIllustration } from './HeroIllustration';
+import { M } from '../common/HexagonalVault';
 
 export const HeroSection: React.FC = () => {
   return (
-    <section className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 lg:pt-16 lg:pb-28 bg-gradient-to-b from-brand-bg via-brand-bg-alt/50 to-brand-bg border-b border-brand-border/70">
-      {/* Background Subtle Grid Texture */}
-      <div className="absolute inset-0 hero-grid-pattern opacity-40 pointer-events-none" />
+    <section className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 lg:pt-16 lg:pb-28 bg-[#fbfbfb] border-b border-brand-border/70">
+      {/* React Bits Pro Hexagonal Vault Interactive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-auto">
+        <M
+          colors={["#8bf3ff", "#8ca3ff"]}
+          backgroundColor={"#fbfbfb"}
+        />
+      </div>
 
-      {/* Soft Ambient Radial Blur Accents */}
-      <div className="absolute top-10 left-1/4 -translate-x-1/2 w-96 h-96 bg-brand-blue/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pointer-events-none">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center pointer-events-auto">
           {/* Hero Left Content Column */}
           <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
             <div>
