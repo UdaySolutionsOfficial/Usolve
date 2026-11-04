@@ -217,12 +217,11 @@ export const HexagonalVault: React.FC<HexagonalVaultProps> = ({
       }
     };
 
-    // Attach listeners to parent element (the entire hero section) for seamless tracking across the hero
-    const targetElement = container.parentElement || container;
-    targetElement.addEventListener('mousemove', handlePointerMove);
-    targetElement.addEventListener('mousedown', handlePointerDown);
-    targetElement.addEventListener('touchstart', handlePointerMove, { passive: true });
-    targetElement.addEventListener('touchmove', handlePointerMove, { passive: true });
+    // Listen to window-level events so background responds to cursor ANYWHERE on screen
+    window.addEventListener('mousemove', handlePointerMove, { passive: true });
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('touchstart', handlePointerMove, { passive: true });
+    window.addEventListener('touchmove', handlePointerMove, { passive: true });
 
     const handleWindowResize = () => {
       buildGrid();
@@ -387,10 +386,10 @@ export const HexagonalVault: React.FC<HexagonalVaultProps> = ({
 
     return () => {
       cancelAnimationFrame(animId);
-      targetElement.removeEventListener('mousemove', handlePointerMove);
-      targetElement.removeEventListener('mousedown', handlePointerDown);
-      targetElement.removeEventListener('touchstart', handlePointerMove);
-      targetElement.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('touchstart', handlePointerMove);
+      window.removeEventListener('touchmove', handlePointerMove);
       window.removeEventListener('resize', handleWindowResize);
     };
   }, [colors, backgroundColor, hexagonSize, glowRadius, idleAnimation]);

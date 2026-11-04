@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
-import { HeroCrystallineLogo } from './HeroCrystallineLogo';
+import { Hero3dLogo } from './Hero3dLogo';
 import { M } from '../common/HexagonalVault';
 
 export const HeroSection: React.FC = () => {
@@ -80,9 +80,9 @@ export const HeroSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Hero Right Visual Column: 3D Crystalline Interactive Logo */}
+          {/* Hero Right Visual Column: Real 3D WebGL Logo Model */}
           <div className="lg:col-span-5 flex items-center justify-center">
-            <HeroCrystallineLogo />
+            <Hero3dLogo />
           </div>
         </div>
       </div>
