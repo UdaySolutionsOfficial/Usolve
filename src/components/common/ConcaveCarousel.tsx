@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   motion,
   AnimatePresence,
@@ -903,131 +904,135 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
         </div>
       </div>
 
-      {/* Service Detail Interactive 3D Card Expansion Popup Modal */}
-      <AnimatePresence>
-        {activeModalItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pointer-events-auto">
-            {/* Ambient Backdrop Blur Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              onClick={() => setActiveModalItem(null)}
-              className="fixed inset-0 bg-brand-navy/65 backdrop-blur-md cursor-pointer"
-              aria-hidden="true"
-            />
-
-            {/* 3D Motion Graphics Expanded Card: Physically moves forward from 3D space & reveals details */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.75, y: 30, rotateX: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, scale: 0.78, y: 20, rotateX: 8 }}
-              transition={{
-                type: 'spring',
-                damping: 26,
-                stiffness: 280,
-                mass: 0.8,
-              }}
-              style={{
-                transformPerspective: 1200,
-                transformStyle: 'preserve-3d',
-              }}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="service-modal-title"
-              className="relative w-full max-w-[520px] max-h-[85vh] sm:max-h-[80vh] bg-white rounded-[22px] sm:rounded-[26px] shadow-[0_30px_90px_-15px_rgba(15,35,70,0.45)] border border-white/60 overflow-hidden z-10 flex flex-col text-left my-auto"
-            >
-              {/* Image Banner Header: Seamless continuation of the 3D card artwork */}
-              <div className="relative h-40 sm:h-48 w-full shrink-0 overflow-hidden bg-brand-navy select-none">
-                <img
-                  src={activeModalItem.image}
-                  alt={activeModalItem.title}
-                  className="w-full h-full object-cover object-center"
+      {/* Service Detail Interactive 3D Card Expansion Popup Modal (Portaled directly to document.body) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {activeModalItem && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 pt-20 sm:pt-24 pb-6 overflow-y-auto pointer-events-auto">
+                {/* Ambient Backdrop Blur Overlay */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  onClick={() => setActiveModalItem(null)}
+                  className="fixed inset-0 bg-brand-navy/60 backdrop-blur-md cursor-pointer"
+                  aria-hidden="true"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-navy via-brand-navy/40 to-black/30" />
 
-                {/* Top Header: Badge & Close Button */}
-                <div className="absolute top-3 left-3.5 right-3.5 flex items-center justify-between z-10">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-navy/90 text-white backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-semibold shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
-                    <span>{activeModalItem.category || activeModalItem.badge}</span>
-                  </span>
+                {/* 3D Motion Graphics Expanded Card: Physically moves forward from 3D space & reveals details */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.78, y: 24, rotateX: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+                  exit={{ opacity: 0, scale: 0.82, y: 16, rotateX: 5 }}
+                  transition={{
+                    type: 'spring',
+                    damping: 28,
+                    stiffness: 300,
+                    mass: 0.8,
+                  }}
+                  style={{
+                    transformPerspective: 1200,
+                    transformStyle: 'preserve-3d',
+                  }}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="service-modal-title"
+                  className="relative w-full max-w-[490px] max-h-[82vh] sm:max-h-[78vh] bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_25px_80px_-12px_rgba(15,35,70,0.45)] border border-white/70 overflow-hidden z-10 flex flex-col text-left my-auto"
+                >
+                  {/* Image Banner Header: Seamless continuation of the 3D card artwork */}
+                  <div className="relative h-36 sm:h-44 w-full shrink-0 overflow-hidden bg-brand-navy select-none">
+                    <img
+                      src={activeModalItem.image}
+                      alt={activeModalItem.title}
+                      className="w-full h-full object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-navy via-brand-navy/45 to-black/35" />
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalItem(null)}
-                    aria-label="Close modal"
-                    className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/20 hover:scale-105 active:scale-95"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+                    {/* Top Header: Badge & Close Button */}
+                    <div className="absolute top-3 left-3.5 right-3.5 flex items-center justify-between z-10">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-navy/90 text-white backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-semibold shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+                        <span>{activeModalItem.category || activeModalItem.badge}</span>
+                      </span>
 
-                {/* Service Title & Subtitle pinned to banner bottom */}
-                <div className="absolute bottom-3 left-4 right-4 z-10">
-                  <h3
-                    id="service-modal-title"
-                    className="text-lg sm:text-xl font-extrabold text-white tracking-tight drop-shadow-md font-heading"
-                  >
-                    {activeModalItem.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-brand-blue-light font-medium line-clamp-1 mt-0.5">
-                    {activeModalItem.subtitle}
-                  </p>
-                </div>
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalItem(null)}
+                        aria-label="Close modal"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/20 hover:scale-105 active:scale-95 shadow-sm"
+                      >
+                        <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    </div>
 
-              {/* Modal Body (Scrollable if height constrained on smaller screens) */}
-              <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1">
-                {/* Client-friendly plain explanation */}
-                <p className="text-xs sm:text-sm text-brand-slate leading-relaxed">
-                  {activeModalItem.summary || activeModalItem.subtitle}
-                </p>
-
-                {/* Key Business Advantages */}
-                {activeModalItem.highlights && activeModalItem.highlights.length > 0 && (
-                  <div className="pt-0.5">
-                    <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-brand-navy/70 mb-2">
-                      Key Business Advantages
-                    </h4>
-                    <ul className="space-y-1.5 sm:space-y-2">
-                      {activeModalItem.highlights.map((highlight, hIdx) => (
-                        <li key={hIdx} className="flex items-start gap-2 text-xs sm:text-sm text-brand-navy">
-                          <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0 mt-0.5" />
-                          <span className="leading-snug">{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Service Title & Subtitle pinned to banner bottom */}
+                    <div className="absolute bottom-2.5 left-4 right-4 z-10">
+                      <h3
+                        id="service-modal-title"
+                        className="text-base sm:text-lg md:text-xl font-extrabold text-white tracking-tight drop-shadow-md font-heading"
+                      >
+                        {activeModalItem.title}
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-brand-blue-light font-medium line-clamp-1 mt-0.5">
+                        {activeModalItem.subtitle}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Bottom Action Bar */}
-              <div className="p-3.5 sm:p-4 bg-brand-bg-alt/40 border-t border-brand-border/60 shrink-0 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveModalItem(null)}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-brand-slate hover:text-brand-navy hover:bg-brand-bg-alt transition-colors cursor-pointer"
-                >
-                  Close
-                </button>
+                  {/* Modal Body */}
+                  <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1">
+                    {/* Client-friendly plain explanation */}
+                    <p className="text-xs sm:text-sm text-brand-slate leading-relaxed">
+                      {activeModalItem.summary || activeModalItem.subtitle}
+                    </p>
 
-                <Button
-                  to={activeModalItem.link}
-                  variant="primary"
-                  size="sm"
-                  icon={<ArrowRight className="w-3.5 h-3.5" />}
-                  onClick={() => setActiveModalItem(null)}
-                  className="shadow-sm hover:shadow text-xs py-2 px-4"
-                >
-                  Explore Full Service Details
-                </Button>
+                    {/* Key Business Advantages in a refined card box */}
+                    {activeModalItem.highlights && activeModalItem.highlights.length > 0 && (
+                      <div className="bg-brand-bg-alt/70 rounded-xl p-3 sm:p-3.5 border border-brand-border/50">
+                        <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-brand-navy/70 mb-2">
+                          Key Business Advantages
+                        </h4>
+                        <ul className="space-y-1.5 sm:space-y-2">
+                          {activeModalItem.highlights.map((highlight, hIdx) => (
+                            <li key={hIdx} className="flex items-start gap-2 text-xs sm:text-sm text-brand-navy">
+                              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0 mt-0.5" />
+                              <span className="leading-snug">{highlight}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Action Bar */}
+                  <div className="p-3 sm:p-3.5 bg-brand-bg-alt/40 border-t border-brand-border/60 shrink-0 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalItem(null)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-brand-slate hover:text-brand-navy hover:bg-brand-bg-alt transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
+
+                    <Button
+                      to={activeModalItem.link}
+                      variant="primary"
+                      size="sm"
+                      icon={<ArrowRight className="w-3.5 h-3.5" />}
+                      onClick={() => setActiveModalItem(null)}
+                      className="shadow-sm hover:shadow text-xs py-2 px-4"
+                    >
+                      Explore Full Service Details
+                    </Button>
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };
