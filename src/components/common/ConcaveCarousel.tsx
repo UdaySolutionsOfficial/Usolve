@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 export interface ConcaveCarouselItem {
   id: string;
   title: string;
+  shortTitle?: string;
   subtitle: string;
   badge: string;
   category?: string;
@@ -334,6 +335,23 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     loading="lazy"
                     className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
                   />
+
+                  {/* Subtle Contrast Gradient Scrim */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-black/35 pointer-events-none" />
+
+                  {/* Centered Service Name Typography Plaque - Clear on center & side cards */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3 sm:p-4 text-center pointer-events-none select-none z-10">
+                    <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-brand-navy/70 backdrop-blur-md border border-white/20 shadow-xl max-w-[85%] transition-transform duration-300 group-hover:scale-105">
+                      <span className="block text-xs sm:text-sm md:text-base font-black text-white tracking-tight font-heading drop-shadow-md leading-snug">
+                        {item.shortTitle || item.title}
+                      </span>
+                      {item.category && (
+                        <span className="block text-[9px] sm:text-[10px] font-semibold text-brand-blue-light/90 tracking-wider uppercase mt-0.5">
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </Link>
 
                 {/* React Bits Pro Floor Reflection Effect */}
