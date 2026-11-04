@@ -53,26 +53,29 @@ interface ThematicSatellite {
   icon: React.ReactNode;
 }
 
-// Service-specific floating vector icon satellites that pop out from behind the card on hover
+// Service-specific floating vector icon satellites that pop out into open air around the card on hover
 const getThematicSatellites = (id: string): ThematicSatellite[] => {
   switch (id) {
     case 'web-design-dev':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Code2 className="w-4 h-4 text-brand-cyan" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Globe className="w-4 h-4 text-brand-blue-light" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
         },
@@ -80,20 +83,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'custom-software':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Cpu className="w-4 h-4 text-brand-cyan" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Layers className="w-4 h-4 text-brand-blue-light" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />,
         },
@@ -101,20 +107,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'mobile-app-development':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Smartphone className="w-4 h-4 text-brand-cyan" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Globe className="w-4 h-4 text-brand-blue-light" />,
         },
@@ -122,20 +131,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'digital-marketing':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Search className="w-4 h-4 text-brand-cyan" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-brand-blue-light" />,
         },
@@ -143,20 +155,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'seo-growth':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Search className="w-4 h-4 text-amber-300" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-brand-cyan" />,
         },
@@ -164,20 +179,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'ai-business-systems':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Bot className="w-4 h-4 text-brand-cyan" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Cpu className="w-4 h-4 text-purple-400" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
         },
@@ -185,20 +203,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'ecommerce-solutions':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <ShoppingBag className="w-4 h-4 text-emerald-400" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <ShieldCheck className="w-3.5 h-3.5 text-brand-cyan" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
         },
@@ -206,20 +227,23 @@ const getThematicSatellites = (id: string): ThematicSatellite[] => {
     case 'graphic-branding':
       return [
         {
-          basePos: 'top-1 right-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          basePos: '-top-2 -right-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:translate-x-8',
           delay: 'duration-300',
           icon: <Palette className="w-4 h-4 text-purple-400" />,
         },
         {
-          basePos: 'top-1 left-1',
-          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          basePos: '-top-2 -left-2',
+          hoverTransform:
+            'group-hover:-translate-y-7 group-hover:-translate-x-7 sm:group-hover:-translate-y-8 sm:group-hover:-translate-x-8',
           delay: 'duration-300 delay-75',
           icon: <Layers className="w-4 h-4 text-brand-blue-light" />,
         },
         {
-          basePos: 'bottom-4 right-1',
-          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          basePos: 'bottom-5 -right-2',
+          hoverTransform:
+            'group-hover:translate-y-6 group-hover:translate-x-7 sm:group-hover:translate-y-7 sm:group-hover:translate-x-8',
           delay: 'duration-300 delay-100',
           icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
         },
@@ -268,27 +292,27 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // SUBSTANTIALLY INCREASED CARD HEIGHT:
-  // Taller aspect ratio (~1.12) ensures images are fully visible with zero cropping
+  // CALIBRATED CARD HEIGHT & ASPECT RATIO:
+  // Balances full 3D visual visibility with generous breathing room below the section title
   let panelHeight: number;
   if (viewportHeight < 640) {
-    panelHeight = 260;
+    panelHeight = 225;
   } else if (viewportHeight < 740) {
-    panelHeight = 310;
+    panelHeight = 260;
   } else if (viewportHeight < 880) {
-    panelHeight = 350;
+    panelHeight = 290;
   } else if (viewportHeight < 1050) {
-    panelHeight = 385;
+    panelHeight = 320;
   } else {
-    panelHeight = 420;
+    panelHeight = 355;
   }
 
   // Mobile width constraint
   if (viewportWidth < 500) {
-    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.12));
+    panelHeight = Math.min(panelHeight, Math.round((viewportWidth - 48) / 1.18));
   }
 
-  const aspect = 1.12;
+  const aspect = 1.18;
   const panelWidth = Math.round(panelHeight * aspect);
 
   // SCROLL-DRIVEN BIDIRECTIONAL CONTROL
@@ -546,14 +570,14 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease-out, filter 0.22s ease-out',
                 }}
               >
-                {/* Interactive Satellite Vector Icons: pop out from behind the card into the background on hover */}
+                {/* Interactive Satellite Vector Icons: pop out into open air around the card on hover */}
                 {getThematicSatellites(item.id).map((sat, sIdx) => (
                   <div
                     key={sIdx}
                     aria-hidden="true"
-                    className={`absolute ${sat.basePos} pointer-events-none z-0 transform transition-all ease-out scale-50 opacity-0 ${sat.hoverTransform} group-hover:scale-100 group-hover:opacity-100 ${sat.delay}`}
+                    className={`absolute ${sat.basePos} pointer-events-none z-30 transform transition-all ease-out scale-50 opacity-0 ${sat.hoverTransform} group-hover:scale-100 group-hover:opacity-100 ${sat.delay}`}
                   >
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-navy/95 border border-white/30 shadow-xl shadow-brand-blue/25 backdrop-blur-md flex items-center justify-center">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-navy/95 border border-brand-cyan/40 shadow-xl shadow-brand-blue/30 backdrop-blur-md flex items-center justify-center text-white">
                       {sat.icon}
                     </div>
                   </div>
