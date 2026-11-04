@@ -1,9 +1,19 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { useScroll, useSpring, useTransform, useReducedMotion } from 'framer-motion';
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useSpring,
+  useTransform,
+  useReducedMotion,
+} from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
-  ArrowUpRight,
+  ArrowRight,
+  X,
+  CheckCircle2,
+  Eye,
   Code2,
   Layers,
   Smartphone,
@@ -17,7 +27,7 @@ import {
   Globe,
   ShieldCheck,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Button } from './Button';
 
 export interface ConcaveCarouselItem {
   id: string;
@@ -28,6 +38,8 @@ export interface ConcaveCarouselItem {
   category?: string;
   image: string;
   link: string;
+  summary?: string;
+  highlights?: string[];
 }
 
 export interface ConcaveCarouselProps {
@@ -334,6 +346,14 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   const scrollTimeoutRef = useRef<number | null>(null);
   const dragStartXRef = useRef(0);
   const dragStartCurrentRef = useRef(0);
+  const dragDistanceRef = useRef(0);
+
+  // Active Modal Item for interactive service overview popup
+  const [activeModalItem, setActiveModalItem] = useState<ConcaveCarouselItem | null>(null);
+
+  // Smooth Arrow Transition & Snap Animation
+  const targetIndexRef = useRef<number | null>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   // Custom Cursor Pill Tracking State
   const [hoveredCard, setHoveredCard] = useState<ConcaveCarouselItem | null>(null);
@@ -354,7 +374,28 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     setMousePos({ x: e.clientX, y: e.clientY });
   };
 
-  // Detect when user is actively scrolling page
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!activeModalItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveModalItem(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeModalItem]);
+
+  // Clean up animation frames on unmount
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Detect when user is actively scrolling page vertically
   useEffect(() => {
     const handleScroll = () => {
       isScrollingRef.current = true;
@@ -379,12 +420,68 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   useEffect(() => {
     if (shouldReduceMotion) return;
     const unsub = smoothScrollIndex.on('change', (val) => {
-      if (!isDraggingRef.current) {
+      if (!isDraggingRef.current && animFrameRef.current === null) {
         setCurrentIndex(val + manualOffset + autoDriftRef.current);
       }
     });
     return () => unsub();
   }, [smoothScrollIndex, manualOffset, shouldReduceMotion]);
+
+  // HORIZONTAL SCROLL LISTENER (Trackpad 2-finger horizontal swipe & horizontal wheel)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let wheelTimeout: number | null = null;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (activeModalItem) return;
+
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+
+      // If user is intentionally scrolling horizontally (|deltaX| > |deltaY|)
+      if (absX > absY && absX > 1.5) {
+        // Prevent default browser back/forward history navigation gesture
+        e.preventDefault();
+
+        // Pause ambient drift while scrolling
+        isScrollingRef.current = true;
+        if (wheelTimeout !== null) {
+          window.clearTimeout(wheelTimeout);
+        }
+        wheelTimeout = window.setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 220);
+
+        // Cancel any button animation in progress
+        if (animFrameRef.current !== null) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = null;
+          targetIndexRef.current = null;
+        }
+
+        const pxPerCard = panelWidth + gap;
+        const deltaFraction = (e.deltaX / pxPerCard) * 0.95;
+
+        setCurrentIndex((prev) => {
+          const next = prev + deltaFraction;
+          const scrollVal = smoothScrollIndex.get();
+          autoDriftRef.current = 0;
+          setManualOffset(next - scrollVal);
+          return next;
+        });
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      if (wheelTimeout !== null) {
+        window.clearTimeout(wheelTimeout);
+      }
+    };
+  }, [panelWidth, gap, smoothScrollIndex, activeModalItem]);
 
   // NATURAL AUTOMATIC SMOOTH MOVING LOOP (Ambient Drift when Idle)
   useEffect(() => {
@@ -397,7 +494,13 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
       const dt = Math.min(0.1, (now - lastTime) / 1000);
       lastTime = now;
 
-      if (!isDraggingRef.current && !isHoveredRef.current && !isScrollingRef.current) {
+      if (
+        !isDraggingRef.current &&
+        !isHoveredRef.current &&
+        !isScrollingRef.current &&
+        animFrameRef.current === null &&
+        !activeModalItem
+      ) {
         autoDriftRef.current += speed * dt;
         const baseScroll = smoothScrollIndex.get();
         setCurrentIndex(baseScroll + manualOffset + autoDriftRef.current);
@@ -408,20 +511,69 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [autoplay, speed, manualOffset, smoothScrollIndex, shouldReduceMotion]);
+  }, [autoplay, speed, manualOffset, smoothScrollIndex, shouldReduceMotion, activeModalItem]);
+
+  // Silky-smooth eased transition to any target index
+  const smoothTransitionTo = useCallback(
+    (targetVal: number) => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+
+      targetIndexRef.current = targetVal;
+      const startVal = currentIndex;
+      const totalChange = targetVal - startVal;
+      const startTime = performance.now();
+      const duration = 440; // 440ms: silky-smooth fluid easing
+
+      isScrollingRef.current = true;
+
+      const step = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        // Silky cubic ease-out: starts with gentle momentum, settles like silk
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const nextIdx = startVal + totalChange * ease;
+
+        setCurrentIndex(nextIdx);
+
+        if (progress < 1) {
+          animFrameRef.current = requestAnimationFrame(step);
+        } else {
+          setCurrentIndex(targetVal);
+          const scrollVal = smoothScrollIndex.get();
+          autoDriftRef.current = 0;
+          setManualOffset(targetVal - scrollVal);
+          targetIndexRef.current = null;
+          animFrameRef.current = null;
+          isScrollingRef.current = false;
+        }
+      };
+
+      animFrameRef.current = requestAnimationFrame(step);
+    },
+    [currentIndex, smoothScrollIndex]
+  );
 
   // Pointer drag gestures
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+      targetIndexRef.current = null;
+    }
     setIsDragging(true);
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
     dragStartCurrentRef.current = currentIndex;
+    dragDistanceRef.current = 0;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     const deltaX = e.clientX - dragStartXRef.current;
+    dragDistanceRef.current = Math.abs(deltaX);
     const pxPerCard = panelWidth + gap;
     const newIdx = dragStartCurrentRef.current - deltaX / pxPerCard;
     setCurrentIndex(newIdx);
@@ -432,22 +584,26 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
     setIsDragging(false);
     isDraggingRef.current = false;
     const target = Math.round(currentIndex);
-    const scrollVal = smoothScrollIndex.get();
-    autoDriftRef.current = 0;
-    setManualOffset(target - scrollVal);
-    setCurrentIndex(target);
+    smoothTransitionTo(target);
+    setTimeout(() => {
+      dragDistanceRef.current = 0;
+    }, 60);
   };
 
-  // Arrow button clicks: smoothly moves cards forward or backward
+  // Arrow button clicks: smoothly glides cards forward or backward
   const goToNext = useCallback(() => {
-    setManualOffset((prev) => prev + 1);
-    setCurrentIndex((prev) => Math.round(prev) + 1);
-  }, []);
+    const currentBase =
+      targetIndexRef.current !== null ? targetIndexRef.current : currentIndex;
+    const nextTarget = Math.round(currentBase) + 1;
+    smoothTransitionTo(nextTarget);
+  }, [currentIndex, smoothTransitionTo]);
 
   const goToPrev = useCallback(() => {
-    setManualOffset((prev) => prev - 1);
-    setCurrentIndex((prev) => Math.round(prev) - 1);
-  }, []);
+    const currentBase =
+      targetIndexRef.current !== null ? targetIndexRef.current : currentIndex;
+    const prevTarget = Math.round(currentBase) - 1;
+    smoothTransitionTo(prevTarget);
+  }, [currentIndex, smoothTransitionTo]);
 
   // 3D Geometry calculations
   const stepAngleDeg = 28 * Math.max(0.65, curvature);
@@ -477,7 +633,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
       className={`relative w-full select-none ${className}`}
     >
       {/* Floating Custom Cursor Text Pill Following Mouse on Hover */}
-      {hoveredCard && (
+      {hoveredCard && !activeModalItem && (
         <div
           aria-hidden="true"
           className="fixed pointer-events-none z-50 transition-transform duration-75 ease-out will-change-transform hidden sm:block"
@@ -492,7 +648,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
             <span className="text-xs font-bold tracking-tight font-heading whitespace-nowrap">
               {hoveredCard.shortTitle || hoveredCard.title}
             </span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-brand-blue-light" />
+            <span className="text-[10px] text-brand-cyan font-semibold ml-1">✦ Quick View</span>
           </div>
         </div>
       )}
@@ -583,12 +739,33 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                   </div>
                 ))}
 
-                {/* 3D Depth Card: 100% UNOBSTRUCTED CENTER ARTWORK */}
-                <Link
-                  to={item.link}
+                {/* 3D Depth Card: Interactive Click opens Quick View popup (or smoothly centers side card) */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onMouseEnter={() => setHoveredCard(item)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-all duration-300 group-hover:scale-[1.025] group-hover:shadow-brand-blue/20 border border-white/20 bg-white z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // If user was dragging, don't trigger click action
+                    if (dragDistanceRef.current > 8) return;
+
+                    if (absDelta > 0.4) {
+                      // Smoothly glide side card to center
+                      const target = Math.round(currentIndex + delta);
+                      smoothTransitionTo(target);
+                    } else {
+                      // Center card clicked: open the interactive service popup!
+                      setActiveModalItem(item);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActiveModalItem(item);
+                    }
+                  }}
+                  className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-all duration-300 group-hover:scale-[1.025] group-hover:shadow-brand-blue/20 border border-white/20 bg-white z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
                   style={{
                     borderRadius: `${radius}px`,
                     boxShadow:
@@ -615,7 +792,22 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                       <span>{item.shortTitle || item.title}</span>
                     </span>
                   </div>
-                </Link>
+
+                  {/* Interactive Quick View Button on Card Bottom-Right */}
+                  <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-20 select-none">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModalItem(item);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-black/55 hover:bg-brand-blue text-white/90 hover:text-white backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-semibold transition-all active:scale-95 cursor-pointer shadow-sm"
+                    >
+                      <span>Overview</span>
+                      <Eye className="w-3 h-3 text-brand-cyan" />
+                    </button>
+                  </div>
+                </div>
 
                 {/* React Bits Pro Floor Reflection Effect */}
                 {reflection > 0 && (
@@ -701,6 +893,120 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Service Detail Interactive Popup Modal */}
+      <AnimatePresence>
+        {activeModalItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModalItem(null)}
+              className="fixed inset-0 bg-brand-navy/70 backdrop-blur-sm cursor-pointer"
+              aria-hidden="true"
+            />
+
+            {/* Modal Dialog Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="service-modal-title"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-brand-border/70 overflow-hidden z-10 my-auto text-left"
+            >
+              {/* Image Banner Header */}
+              <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-brand-navy">
+                <img
+                  src={activeModalItem.image}
+                  alt={activeModalItem.title}
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
+
+                {/* Top Badge & Close Button */}
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-navy/90 text-white backdrop-blur-md border border-white/20 text-xs font-semibold shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+                    <span>{activeModalItem.category || activeModalItem.badge}</span>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalItem(null)}
+                    aria-label="Close modal"
+                    className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer active:scale-95 border border-white/20"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Title & Subtitle */}
+                <div className="absolute bottom-3.5 left-4 right-4 z-10">
+                  <h3
+                    id="service-modal-title"
+                    className="text-lg sm:text-xl font-bold text-white tracking-tight drop-shadow-md"
+                  >
+                    {activeModalItem.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-brand-blue-light/90 line-clamp-1 mt-0.5">
+                    {activeModalItem.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Body: Client-attractive, non-technical plain English */}
+              <div className="p-5 sm:p-6 space-y-4">
+                <p className="text-xs sm:text-sm text-brand-slate leading-relaxed">
+                  {activeModalItem.summary || activeModalItem.subtitle}
+                </p>
+
+                {activeModalItem.highlights && activeModalItem.highlights.length > 0 && (
+                  <div className="pt-1">
+                    <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-brand-navy/70 mb-2">
+                      Key Business Advantages
+                    </h4>
+                    <ul className="space-y-2">
+                      {activeModalItem.highlights.map((highlight, hIdx) => (
+                        <li key={hIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-brand-navy">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Modal Footer with Action Buttons */}
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-brand-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalItem(null)}
+                    className="order-2 sm:order-1 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-brand-slate hover:text-brand-navy hover:bg-brand-bg-alt transition-colors cursor-pointer text-center"
+                  >
+                    Close
+                  </button>
+
+                  <Button
+                    to={activeModalItem.link}
+                    variant="primary"
+                    size="sm"
+                    icon={<ArrowRight className="w-3.5 h-3.5" />}
+                    onClick={() => setActiveModalItem(null)}
+                    className="order-1 sm:order-2 shadow-sm hover:shadow text-xs sm:text-sm py-2 px-4"
+                  >
+                    Explore Full Service Details
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

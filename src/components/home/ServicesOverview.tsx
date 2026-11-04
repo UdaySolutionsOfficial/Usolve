@@ -16,6 +16,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Web Platforms',
       image: '/assets/services/service-web-dev.jpg',
       link: '/services#web-design-dev',
+      summary:
+        'We design and build fast, beautifully crafted websites and web applications that captivate visitors and convert traffic into paying clients. From high-converting corporate sites to interactive portals, your brand gets a dependable digital home.',
+      highlights: [
+        'Lightning-fast load speeds optimized across all mobile and desktop screens',
+        'Intuitive, conversion-focused design tailored specifically to your audience',
+        'Modern, scalable web foundation built to expand smoothly as your business grows',
+      ],
     },
     {
       id: 'custom-software',
@@ -26,6 +33,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Software Architecture',
       image: '/assets/services/service-custom-software.jpg',
       link: '/services#custom-software',
+      summary:
+        'Say goodbye to repetitive manual tasks and scattered spreadsheets. We build tailored software workflows, internal team portals, and automated business tools engineered precisely around how your company operates.',
+      highlights: [
+        'Automates complex daily routines to save valuable operational hours each week',
+        'Connects seamlessly with your existing CRM, accounting, and cloud databases',
+        'Secure, enterprise-grade reliability with zero recurring bloatware subscriptions',
+      ],
     },
     {
       id: 'mobile-app-development',
@@ -36,6 +50,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Mobile Applications',
       image: '/assets/services/service-mobile-apps.jpg',
       link: '/services#mobile-app-development',
+      summary:
+        'Put your services directly into your customers’ hands. We build sleek, reliable mobile apps for iPhone and Android with responsive touch gestures, instant notifications, and smooth offline performance.',
+      highlights: [
+        'Fluid user experience across modern iOS and Android smartphones',
+        'Effortless navigation and engagement loops designed to maximize customer retention',
+        'Complete end-to-end guidance from app store approvals to post-launch updates',
+      ],
     },
     {
       id: 'digital-marketing',
@@ -46,6 +67,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Digital Growth',
       image: '/assets/services/service-digital-marketing.jpg',
       link: '/services#meta-ads',
+      summary:
+        'Stop spending advertising budget on guesswork. We craft data-driven social media ad campaigns and conversion funnels that reach your ideal buyers and consistently produce qualified customer inquiries.',
+      highlights: [
+        'Precision audience targeting across Meta, Instagram, and search platforms',
+        'High-converting ad creatives, persuasive copy, and dedicated landing pages',
+        'Transparent weekly reporting with clear ROI and cost-per-lead tracking',
+      ],
     },
     {
       id: 'seo-growth',
@@ -56,6 +84,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Search Optimization',
       image: '/assets/services/service-seo-growth.jpg',
       link: '/services#seo-growth',
+      summary:
+        'Get found by clients actively searching for your services online. We optimize technical speed, page structure, and Google ranking signals to deliver consistent, organic business leads month after month.',
+      highlights: [
+        'High Google rankings for valuable search queries that generate real inquiries',
+        'Deep technical fixes that improve user retention and Google search trust',
+        'Long-term compounding organic traffic without ongoing ad expenditure',
+      ],
     },
     {
       id: 'ai-business-systems',
@@ -66,6 +101,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'AI & Automation',
       image: '/assets/services/service-ai-systems.jpg',
       link: '/services#ai-business-systems',
+      summary:
+        'Empower your team with smart AI assistants and workflow automations that work 24/7. From conversational customer response agents to automated data pipelines, we make AI practical, simple, and profitable.',
+      highlights: [
+        '24/7 intelligent customer response and instant lead qualification',
+        'Automated document extraction, routine processing, and smart notifications',
+        'Custom-trained exclusively on your company’s real data, FAQs, and guidelines',
+      ],
     },
     {
       id: 'ecommerce-solutions',
@@ -76,6 +118,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Digital Commerce',
       image: '/assets/services/service-ecommerce.jpg',
       link: '/services#ecommerce-solutions',
+      summary:
+        'Turn online visitors into loyal buyers with effortless digital shopping. We deliver fast product catalogs, 1-click mobile checkouts, and seamless payment processing engineered to maximize your online sales.',
+      highlights: [
+        'Frictionless checkout journey specifically optimized to prevent cart abandonment',
+        'Seamless integration with secure global and domestic payment gateways',
+        'Real-time inventory synchronization and automated order fulfillment alerts',
+      ],
     },
     {
       id: 'graphic-branding',
@@ -86,6 +135,13 @@ export const ServicesOverview: React.FC = () => {
       category: 'Creative Design',
       image: '/assets/services/service-branding.jpg',
       link: '/services#graphic-branding',
+      summary:
+        'Make an unforgettable first impression that builds immediate trust. We develop memorable logos, complete brand guidelines, and premium marketing visuals that position your company as a market leader.',
+      highlights: [
+        'Complete brand identity systems: logos, color schemes, and brand style guides',
+        'Polished marketing collateral for social media, pitch decks, and presentations',
+        'Consistent, high-end visual language that earns client confidence and loyalty',
+      ],
     },
   ];
 
