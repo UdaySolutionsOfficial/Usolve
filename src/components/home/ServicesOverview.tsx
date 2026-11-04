@@ -150,12 +150,12 @@ export const ServicesOverview: React.FC = () => {
       ref={sectionRef}
       id="services-showcase"
       aria-label="Digital Services Built for Business Utility"
-      className="relative min-h-[280vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70"
+      className="relative min-h-[300vh] bg-gradient-to-b from-brand-bg via-brand-bg-alt/30 to-brand-bg border-b border-brand-border/70"
     >
-      {/* Sticky Viewport Container - Perfectly sized to fit any Windows screen, laptop, or mobile without clipping */}
-      <div className="sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] max-h-[100dvh] flex flex-col justify-between py-2 sm:py-3 px-4 overflow-hidden">
-        {/* Section Heading - Sleek, compact & responsive with professional vertical separation */}
-        <div className="max-w-4xl mx-auto px-4 text-center shrink-0 pt-1 sm:pt-2 mb-2 sm:mb-4">
+      {/* Sticky Viewport Container - Generously sized with zero vertical clipping so the bottom button is always 100% visible */}
+      <div className="sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] max-h-[100dvh] flex flex-col justify-between py-1.5 sm:py-2.5 px-4 overflow-x-clip">
+        {/* Section Heading - Sleek, compact & responsive */}
+        <div className="max-w-4xl mx-auto px-4 text-center shrink-0 pt-0.5 sm:pt-1 mb-1 sm:mb-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-brand-blue/10 text-brand-blue border border-brand-blue/20 mb-1">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse" />
             <span>Our Core Capabilities</span>
@@ -163,13 +163,13 @@ export const ServicesOverview: React.FC = () => {
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight leading-tight">
             Digital Services Built for Business Utility
           </h2>
-          <p className="text-xs sm:text-sm text-brand-slate max-w-xl mx-auto mt-1 sm:mt-1.5 line-clamp-1 sm:line-clamp-2">
+          <p className="text-xs sm:text-sm text-brand-slate max-w-xl mx-auto mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">
             We build practical digital systems that streamline business operations, engage customers, and drive measurable growth.
           </p>
         </div>
 
-        {/* 3D Concave Carousel Drum Wall - Endless 1-n-1 loop with generous breathing room */}
-        <div className="w-full flex-1 flex flex-col items-center justify-center relative z-10 pt-4 sm:pt-6 md:pt-8 pb-1">
+        {/* 3D Concave Carousel Drum Wall - Endless 1-n-1 loop */}
+        <div className="w-full flex-1 flex flex-col items-center justify-center relative z-10 pt-1 sm:pt-2 pb-0">
           <ConcaveCarousel
             items={servicesData}
             startIndex={0}
@@ -184,14 +184,14 @@ export const ServicesOverview: React.FC = () => {
           />
         </div>
 
-        {/* Bottom CTA Button */}
-        <div className="text-center shrink-0 z-20 pb-1">
+        {/* Bottom CTA Button - Guaranteed 100% visible and prominent */}
+        <div className="text-center shrink-0 z-20 pt-1 pb-2 sm:pb-3">
           <Button
             to="/services"
             variant="outline"
             size="sm"
             icon={<ArrowRight className="w-3.5 h-3.5" />}
-            className="shadow-xs hover:shadow-md bg-white/95 backdrop-blur-md text-xs sm:text-sm py-1.5 px-4"
+            className="shadow-sm hover:shadow-md bg-white/95 backdrop-blur-md text-xs sm:text-sm py-2 px-5 font-semibold text-brand-navy hover:text-brand-blue border border-brand-border hover:border-brand-blue/30"
           >
             Explore All 13 Services & Detailed Capabilities
           </Button>

@@ -305,18 +305,18 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   }, []);
 
   // CALIBRATED CARD HEIGHT & ASPECT RATIO:
-  // Balances full 3D visual visibility with generous breathing room below the section title
+  // Balances full 3D visual visibility with generous breathing room for the section title and bottom CTA button
   let panelHeight: number;
   if (viewportHeight < 640) {
-    panelHeight = 225;
+    panelHeight = 200;
   } else if (viewportHeight < 740) {
-    panelHeight = 260;
+    panelHeight = 230;
   } else if (viewportHeight < 880) {
-    panelHeight = 290;
+    panelHeight = 260;
   } else if (viewportHeight < 1050) {
-    panelHeight = 320;
+    panelHeight = 290;
   } else {
-    panelHeight = 355;
+    panelHeight = 325;
   }
 
   // Mobile width constraint
@@ -642,7 +642,7 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
   const activeNormalizedIdx =
     ((Math.round(currentIndex) % totalItems) + totalItems) % totalItems;
 
-  const navMarginTop = Math.round(panelHeight * 0.2 + 30);
+  const navMarginTop = Math.round(panelHeight * 0.16 + 18);
 
   return (
     <div
