@@ -46,62 +46,183 @@ export interface ConcaveCarouselProps {
   className?: string;
 }
 
-interface FloatingThematicBadge {
-  label: string;
-  pos: string;
+interface ThematicSatellite {
+  basePos: string;
+  hoverTransform: string;
+  delay: string;
   icon: React.ReactNode;
 }
 
-// Service-specific floating interactive badges on hover
-const getThematicFloatingElements = (id: string): FloatingThematicBadge[] => {
+// Service-specific floating vector icon satellites that pop out from behind the card on hover
+const getThematicSatellites = (id: string): ThematicSatellite[] => {
   switch (id) {
     case 'web-design-dev':
       return [
-        { label: 'Clean Code', pos: 'top-3 right-3', icon: <Code2 className="w-3 h-3 text-brand-blue-light" /> },
-        { label: 'React + TS', pos: 'top-3 left-3', icon: <Globe className="w-3 h-3 text-brand-cyan" /> },
-        { label: '99+ Speed', pos: 'bottom-14 right-3', icon: <Sparkles className="w-3 h-3 text-emerald-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Code2 className="w-4 h-4 text-brand-cyan" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Globe className="w-4 h-4 text-brand-blue-light" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+        },
       ];
     case 'custom-software':
       return [
-        { label: 'Cloud APIs', pos: 'top-3 right-3', icon: <Layers className="w-3 h-3 text-brand-blue-light" /> },
-        { label: 'Microservices', pos: 'top-3 left-3', icon: <Cpu className="w-3 h-3 text-brand-cyan" /> },
-        { label: '99.9% Uptime', pos: 'bottom-14 right-3', icon: <ShieldCheck className="w-3 h-3 text-emerald-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Cpu className="w-4 h-4 text-brand-cyan" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Layers className="w-4 h-4 text-brand-blue-light" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />,
+        },
       ];
     case 'mobile-app-development':
       return [
-        { label: 'iOS & Android', pos: 'top-3 right-3', icon: <Smartphone className="w-3 h-3 text-brand-blue-light" /> },
-        { label: 'Native 60fps', pos: 'top-3 left-3', icon: <Sparkles className="w-3 h-3 text-amber-400" /> },
-        { label: 'Fluid UX', pos: 'bottom-14 right-3', icon: <Globe className="w-3 h-3 text-brand-cyan" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Smartphone className="w-4 h-4 text-brand-cyan" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Globe className="w-4 h-4 text-brand-blue-light" />,
+        },
       ];
     case 'digital-marketing':
       return [
-        { label: 'Meta & Ads', pos: 'top-3 right-3', icon: <TrendingUp className="w-3 h-3 text-brand-blue-light" /> },
-        { label: '+350% ROI', pos: 'top-3 left-3', icon: <Sparkles className="w-3 h-3 text-emerald-400" /> },
-        { label: 'High CTR', pos: 'bottom-14 right-3', icon: <Search className="w-3 h-3 text-amber-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Search className="w-4 h-4 text-brand-cyan" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-brand-blue-light" />,
+        },
       ];
     case 'seo-growth':
       return [
-        { label: '#1 Google Rank', pos: 'top-3 right-3', icon: <Search className="w-3 h-3 text-amber-400" /> },
-        { label: '+240% Traffic', pos: 'top-3 left-3', icon: <TrendingUp className="w-3 h-3 text-emerald-400" /> },
-        { label: 'Core Vitals', pos: 'bottom-14 right-3', icon: <Sparkles className="w-3 h-3 text-brand-cyan" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Search className="w-4 h-4 text-amber-300" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-brand-cyan" />,
+        },
       ];
     case 'ai-business-systems':
       return [
-        { label: 'Neural AI', pos: 'top-3 right-3', icon: <Bot className="w-3 h-3 text-brand-cyan" /> },
-        { label: 'Voice Agents', pos: 'top-3 left-3', icon: <Cpu className="w-3 h-3 text-purple-400" /> },
-        { label: 'Automation', pos: 'bottom-14 right-3', icon: <Sparkles className="w-3 h-3 text-amber-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Bot className="w-4 h-4 text-brand-cyan" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Cpu className="w-4 h-4 text-purple-400" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+        },
       ];
     case 'ecommerce-solutions':
       return [
-        { label: 'Smart Storefront', pos: 'top-3 right-3', icon: <ShoppingBag className="w-3 h-3 text-emerald-400" /> },
-        { label: 'Fast Checkout', pos: 'top-3 left-3', icon: <ShieldCheck className="w-3 h-3 text-brand-cyan" /> },
-        { label: 'Instant Pay', pos: 'bottom-14 right-3', icon: <Sparkles className="w-3 h-3 text-amber-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <ShoppingBag className="w-4 h-4 text-emerald-400" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <ShieldCheck className="w-3.5 h-3.5 text-brand-cyan" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+        },
       ];
     case 'graphic-branding':
       return [
-        { label: 'Design Systems', pos: 'top-3 right-3', icon: <Palette className="w-3 h-3 text-purple-400" /> },
-        { label: 'Vector Precision', pos: 'top-3 left-3', icon: <Layers className="w-3 h-3 text-brand-blue-light" /> },
-        { label: 'Pantone Palette', pos: 'bottom-14 right-3', icon: <Sparkles className="w-3 h-3 text-amber-400" /> },
+        {
+          basePos: 'top-1 right-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:translate-x-3',
+          delay: 'duration-300',
+          icon: <Palette className="w-4 h-4 text-purple-400" />,
+        },
+        {
+          basePos: 'top-1 left-1',
+          hoverTransform: 'group-hover:-translate-y-3 group-hover:-translate-x-3',
+          delay: 'duration-300 delay-75',
+          icon: <Layers className="w-4 h-4 text-brand-blue-light" />,
+        },
+        {
+          basePos: 'bottom-4 right-1',
+          hoverTransform: 'group-hover:translate-y-2 group-hover:translate-x-3',
+          delay: 'duration-300 delay-100',
+          icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+        },
       ];
     default:
       return [];
@@ -425,12 +546,25 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease-out, filter 0.22s ease-out',
                 }}
               >
+                {/* Interactive Satellite Vector Icons: pop out from behind the card into the background on hover */}
+                {getThematicSatellites(item.id).map((sat, sIdx) => (
+                  <div
+                    key={sIdx}
+                    aria-hidden="true"
+                    className={`absolute ${sat.basePos} pointer-events-none z-0 transform transition-all ease-out scale-50 opacity-0 ${sat.hoverTransform} group-hover:scale-100 group-hover:opacity-100 ${sat.delay}`}
+                  >
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-navy/95 border border-white/30 shadow-xl shadow-brand-blue/25 backdrop-blur-md flex items-center justify-center">
+                      {sat.icon}
+                    </div>
+                  </div>
+                ))}
+
                 {/* 3D Depth Card: 100% UNOBSTRUCTED CENTER ARTWORK */}
                 <Link
                   to={item.link}
                   onMouseEnter={() => setHoveredCard(item)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-all duration-300 group-hover:scale-[1.025] group-hover:shadow-brand-blue/20 border border-white/20 bg-white"
+                  className="relative w-full h-full block rounded-[18px] sm:rounded-[22px] overflow-hidden shadow-2xl transition-all duration-300 group-hover:scale-[1.025] group-hover:shadow-brand-blue/20 border border-white/20 bg-white z-10"
                   style={{
                     borderRadius: `${radius}px`,
                     boxShadow:
@@ -447,40 +581,15 @@ export const ConcaveCarousel: React.FC<ConcaveCarouselProps> = ({
                     className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 group-hover:scale-105"
                   />
 
-                  {/* Gentle Bottom Gradient Scrim for Bottom-Left Info Text */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent pointer-events-none" />
+                  {/* Subtle Bottom Gradient Scrim for Bottom-Left Info Text */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Floating Thematic Interactive Elements on Card Hover */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                    {getThematicFloatingElements(item.id).map((elem, eIdx) => (
-                      <div
-                        key={eIdx}
-                        className={`absolute ${elem.pos} px-2.5 py-1 rounded-full bg-brand-navy/90 border border-white/30 text-white shadow-xl backdrop-blur-md flex items-center gap-1.5 transition-all duration-500`}
-                        style={{
-                          transform: 'translateY(0px)',
-                          animation: `bounce 2.5s ease-in-out infinite alternate ${eIdx * 0.3}s`,
-                        }}
-                      >
-                        {elem.icon}
-                        <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">
-                          {elem.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Compact Bottom-Left Info Badge - Leaves Center 3D Artwork Pure & Visible */}
-                  <div className="absolute bottom-3 left-3 sm:bottom-3.5 sm:left-3.5 z-10 pointer-events-none select-none text-left">
-                    <div className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-brand-navy/85 backdrop-blur-md border border-white/20 shadow-md">
-                      <span className="block text-xs sm:text-[13px] font-bold text-white tracking-tight font-heading leading-tight drop-shadow-xs">
-                        {item.shortTitle || item.title}
-                      </span>
-                      {item.category && (
-                        <span className="block text-[9px] sm:text-[10px] font-medium text-brand-blue-light/90 tracking-wider uppercase mt-0.5">
-                          {item.category}
-                        </span>
-                      )}
-                    </div>
+                  {/* Minimalist Micro Tag in Bottom-Left Corner */}
+                  <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-10 pointer-events-none select-none text-left">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-black/55 backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-semibold text-white/90 tracking-wide shadow-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+                      <span>{item.shortTitle || item.title}</span>
+                    </span>
                   </div>
                 </Link>
 
