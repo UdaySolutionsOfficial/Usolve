@@ -31,9 +31,9 @@ export const HeroCrystallineLogo: React.FC = () => {
   const smoothMouseY = useSpring(mouseY, springConfig);
 
   // 3D rotation mappings
-  const rotateX = useTransform(smoothMouseY, [-0.5, 0.5], [14, -14]);
-  const rotateY = useTransform(smoothMouseX, [-0.5, 0.5], [-16, 16]);
-  const translateZ = useTransform(smoothMouseX, [-0.5, 0.5], [-12, 12]);
+  const rotateX = useTransform(smoothMouseY, [-0.5, 0.5], [16, -16]);
+  const rotateY = useTransform(smoothMouseX, [-0.5, 0.5], [-18, 18]);
+  const translateZ = useTransform(smoothMouseX, [-0.5, 0.5], [-15, 15]);
 
   // Handle mouse move over container
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -277,11 +277,11 @@ export const HeroCrystallineLogo: React.FC = () => {
         {/* The 3D Emblem Image */}
         <div className="relative w-full h-full flex items-center justify-center">
           <img
-            src="/assets/brand/logo/usolve-3d-crystalline-sapphire-cyan.png"
-            alt="USolve 3D Crystalline Logo"
-            width={380}
-            height={380}
-            className="w-full h-full object-contain filter drop-shadow-[0_15px_35px_rgba(0,194,255,0.28)] select-none pointer-events-none"
+            src="/assets/brand/logo/usolve-3d-white-blue-glass.png"
+            alt="USolve 3D White & Blue Glass Logo"
+            width={400}
+            height={400}
+            className="w-full h-full object-contain filter drop-shadow-[0_20px_45px_rgba(36,91,204,0.18)] drop-shadow-[0_6px_20px_rgba(0,210,255,0.22)] select-none pointer-events-none"
             draggable={false}
           />
 
