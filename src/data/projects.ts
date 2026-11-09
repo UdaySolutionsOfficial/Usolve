@@ -9,7 +9,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     shortSummary:
       'A dedicated e-commerce web platform designed for DiyasNduas, featuring organized product collections, clean product showcases, and a streamlined mobile shopping interface.',
     liveUrl: 'https://diyasnduas.com/',
-    imageSrc: '/assets/projects/diyasnduas-preview.webp',
+    imageSrc: '/assets/projects/diyasnduas-screenshot.png',
     techStack: ['E-Commerce Architecture', 'Responsive UI', 'Product Catalog', 'Mobile First'],
     verifiedDetails: [
       'Structured category navigation for collections and products',
@@ -26,7 +26,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     shortSummary:
       'A progressive school bus transit tracking and route monitoring web application developed for Surya E.M. High School to provide dependable real-time bus location visibility.',
     liveUrl: 'https://surya-school-bus-tracking.web.app/',
-    imageSrc: '/assets/projects/surya-school-bus-tracking-preview.webp',
+    imageSrc: '/assets/projects/surya-bus-tracking-screenshot.png',
     techStack: ['PWA', 'JavaScript', 'Real-Time Sync', 'Web Location APIs'],
     verifiedDetails: [
       'Live bus fleet route monitoring and coordinate updates',
@@ -43,7 +43,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     shortSummary:
       'A clean, modern commercial fitness club website built for S.N. Olympia Fitness Gym to display facility amenities, training schedules, and local membership inquiries.',
     liveUrl: 'https://snolympiafitnessgym.vercel.app/',
-    imageSrc: '/assets/projects/sn-olympia-fitness-gym-preview.webp',
+    imageSrc: '/assets/projects/sn-olympia-screenshot.png',
     techStack: ['React', 'Modern UI', 'Local SEO', 'Responsive Design'],
     verifiedDetails: [
       'Interactive facility showcase and training program highlights',
