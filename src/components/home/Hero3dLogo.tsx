@@ -27,7 +27,7 @@ export const Hero3dLogo: React.FC = () => {
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
@@ -89,42 +89,46 @@ export const Hero3dLogo: React.FC = () => {
     geom1.computeVertexNormals();
     geom2.computeVertexNormals();
 
-    // 4. Physical Colored Liquid Glass Materials (No clay/plastic look!)
-    // Ribbon 1: Radiant Electric Cyan Liquid Glass
+    // 4. Physical Colored Liquid Glass Materials with Authentic Corporate Saturated Depth
+    // Ribbon 1: Luminous Electric Cyan / Azure Liquid Glass
     const cyanGlassMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#d4f7ff'),          // Crystal glass base with subtle cyan water tint
-      transmission: 0.94,                         // 94% transmission for deep glass transparency!
+      color: new THREE.Color('#00B4D8'),          // Vibrant electric cyan-blue body color
+      emissive: new THREE.Color('#007799'),       // Subtle internal liquid caustics glow
+      emissiveIntensity: 0.28,
+      transmission: 0.52,                         // Balanced 52% glass refraction + 48% rich vivid cyan color
       opacity: 1.0,
       transparent: true,
-      roughness: 0.03,                            // Mirror-polished liquid glass surface (zero clay texture)
-      metalness: 0.0,                             // Pure dielectric glass
-      ior: 1.52,                                  // Optical crown glass refraction index
-      thickness: 8.5,                             // Deep volumetric light travel
-      attenuationColor: new THREE.Color('#00D2FF'), // Deep cyan light absorption inside volume
-      attenuationDistance: 11.0,                  // Transparent at edges, rich electric cyan in core
-      specularIntensity: 1.6,
-      specularColor: new THREE.Color('#ffffff'),
-      clearcoat: 1.0,                             // Ultra-glossy glass lacquer
-      clearcoatRoughness: 0.02,
-      dispersion: 0.08,                           // Chromatic dispersion (rainbow caustics at curved chamfers)
+      roughness: 0.06,                            // Ultra-smooth liquid glass finish
+      metalness: 0.04,
+      ior: 1.52,                                  // Optical crown glass
+      thickness: 6.5,                             // Rich volumetric depth
+      attenuationColor: new THREE.Color('#0096C7'), // Azure light absorption in core
+      attenuationDistance: 5.0,                   // Clear sparkling edges, deep electric cyan inside
+      specularIntensity: 1.5,
+      specularColor: new THREE.Color('#FFFFFF'),  // Crisp white diamond specular glints
+      clearcoat: 1.0,                             // Dual-layer glossy lacquer sheen
+      clearcoatRoughness: 0.03,
+      dispersion: 0.08,                           // Subtle chromatic prism refraction
     });
 
     // Ribbon 2: Deep Corporate Sapphire Navy Liquid Glass
     const navyGlassMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#d8e7fc'),          // Clear sapphire glass base
-      transmission: 0.88,                         // Authentic glass refraction
+      color: new THREE.Color('#1B365D'),          // USolve corporate navy / sapphire
+      emissive: new THREE.Color('#0C1C36'),       // Deep corporate core glow
+      emissiveIntensity: 0.22,
+      transmission: 0.45,                         // 45% glass transmission: deep sapphire body with clear highlights
       opacity: 1.0,
       transparent: true,
-      roughness: 0.04,                            // Ultra-smooth liquid glass
-      metalness: 0.0,
-      ior: 1.56,                                  // Dense optical glass
-      thickness: 10.0,
-      attenuationColor: new THREE.Color('#142744'), // Deep corporate navy absorption
-      attenuationDistance: 9.5,                   // Deep ocean sapphire in thick volume, crystalline clear at edges
-      specularIntensity: 1.7,
-      specularColor: new THREE.Color('#8BF3FF'),   // Vibrant cyan specular reflections on bevels
+      roughness: 0.07,
+      metalness: 0.06,
+      ior: 1.55,
+      thickness: 7.5,
+      attenuationColor: new THREE.Color('#0F172A'), // Rich navy light absorption
+      attenuationDistance: 4.5,                   // Deep ocean sapphire in volume, crystalline bevels
+      specularIntensity: 1.6,
+      specularColor: new THREE.Color('#93C5FD'),  // Soft cyan/blue specular reflection on bevels
       clearcoat: 1.0,
-      clearcoatRoughness: 0.03,
+      clearcoatRoughness: 0.04,
       dispersion: 0.06,
     });
 
@@ -146,23 +150,23 @@ export const Hero3dLogo: React.FC = () => {
     modelGroup.rotation.x = 0.12;
     modelGroup.rotation.y = -0.25;
 
-    // 6. Professional Colored Studio Lighting for Glass Caustics
-    const ambientLight = new THREE.AmbientLight(0xf2f8ff, 1.2);
+    // 6. Professional Studio Lighting Calibrated for Saturated Glass Colors
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
     // Key Light: Overhead softbox casting crisp glass specular glints
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    keyLight.position.set(90, 130, 140);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    keyLight.position.set(85, 115, 135);
     scene.add(keyLight);
 
     // Rim Light: Vibrant Electric Cyan light reflecting off glass bevels
-    const cyanRimLight = new THREE.PointLight(0x00f0ff, 5.0, 380);
-    cyanRimLight.position.set(-90, -30, 95);
+    const cyanRimLight = new THREE.PointLight(0x00d2ff, 3.4, 350);
+    cyanRimLight.position.set(-85, -25, 90);
     scene.add(cyanRimLight);
 
     // Back Light: Royal Sapphire Blue rim illuminating the navy glass depths
-    const blueBackLight = new THREE.PointLight(0x245bcc, 4.0, 380);
-    blueBackLight.position.set(80, -80, -60);
+    const blueBackLight = new THREE.PointLight(0x245bcc, 2.8, 350);
+    blueBackLight.position.set(75, -75, -55);
     scene.add(blueBackLight);
 
     // 7. Global Mouse Tracking across the entire screen
@@ -226,8 +230,8 @@ export const Hero3dLogo: React.FC = () => {
       modelGroup.position.y = Math.sin(elapsedTime * 1.6) * 3.0;
 
       // Subtle internal liquid caustics pulse
-      const liquidPulse = 0.5 + 0.12 * Math.sin(elapsedTime * 2.2);
-      cyanRimLight.intensity = 4.2 + liquidPulse * 1.5;
+      const liquidPulse = 0.5 + 0.15 * Math.sin(elapsedTime * 2.2);
+      cyanRimLight.intensity = 2.8 + liquidPulse * 1.0;
 
       // Shifting dynamic specular point lights
       cyanRimLight.position.x += (targetLightX - cyanRimLight.position.x) * 0.06;
