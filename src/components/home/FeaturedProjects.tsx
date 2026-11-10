@@ -6,14 +6,11 @@ import {
   ExternalLink,
   Sparkles,
   Lock,
-  Info,
-  CheckCircle2,
-  ChevronRight,
-  Layers,
   ArrowUpRight,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../../data/projects';
-import { ProjectModal } from '../work/ProjectModal';
 import { ProjectItem } from '../../types';
 
 // The 3 exact featured projects requested by the user
@@ -31,17 +28,12 @@ interface ProjectStackCardProps {
   project: ProjectItem;
   index: number;
   total: number;
-  onOpenDetails: (project: ProjectItem) => void;
 }
 
-const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
-  project,
-  index,
-  total,
-  onOpenDetails,
-}) => {
+const ProjectStackCard: React.FC<ProjectStackCardProps> = ({ project, index, total }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
+  const [glarePos, setGlarePos] = useState({ x: 50, y: 50 });
   const [isHovered, setIsHovered] = useState(false);
 
   // Scroll tracking for stacking scale & depth
@@ -51,26 +43,35 @@ const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
     layoutEffect: false,
   });
 
-  // Calculate subtle scale-down as subsequent cards stack over this card
-  // Earlier cards scale down more, later cards scale down less
-  const targetScale = 1 - (total - index - 1) * 0.035;
+  // Calculate subtle scale-down and depth as subsequent cards stack over this card
+  const targetScale = 1 - (total - index - 1) * 0.04;
   const scale = useTransform(scrollYProgress, [0, 1], [1, targetScale]);
-  const brightness = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, -20]);
+  const scrollRotateX = useTransform(scrollYProgress, [0, 1], [0, 4]);
+  const brightness = useTransform(scrollYProgress, [0, 1], [1, 0.88]);
+  const opacity = useTransform(scrollYProgress, [0, 0.85, 1], [1, 0.95, 0.82]);
 
   // Clean domain display
   const cleanDomain = project.liveUrl.replace('https://', '').replace(/\/$/, '');
 
-  // 3D Tilt handler for desktop hover
+  // 3D Tilt & Glare handler for desktop hover
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    // max ~4.5 degrees for smooth subtle feel
-    const rotateX = ((y - centerY) / centerY) * -4.5;
-    const rotateY = ((x - centerX) / centerX) * 4.5;
+
+    // Subtle 3D tilt: max ~4 degrees
+    const rotateX = ((y - centerY) / centerY) * -4;
+    const rotateY = ((x - centerX) / centerX) * 4;
     setTilt({ rotateX, rotateY });
+
+    // Glare coordinates (percentage)
+    setGlarePos({
+      x: (x / rect.width) * 100,
+      y: (y / rect.height) * 100,
+    });
   };
 
   const handleMouseEnter = () => setIsHovered(true);
@@ -80,7 +81,6 @@ const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
   };
 
   // Sticky top offset staggered by index so the top rim of earlier cards stays visible
-  // Base offset clears the header (approx 72px) with comfortable breathing room
   const stickyTop = 88 + index * 14;
 
   return (
@@ -95,6 +95,9 @@ const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
       <motion.div
         style={{
           scale,
+          y,
+          rotateX: scrollRotateX,
+          opacity,
           filter: brightness,
         }}
         className="w-full origin-top"
@@ -107,13 +110,20 @@ const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
             transform: `perspective(1200px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`,
             transition: isHovered ? 'transform 0.12s ease-out' : 'transform 0.4s ease-out',
           }}
-          className="group relative bg-white/95 backdrop-blur-xl border border-brand-border/80 hover:border-brand-blue/40 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(20,39,68,0.08)] hover:shadow-[0_25px_60px_rgba(36,91,204,0.12)] transition-shadow duration-300 overflow-hidden"
+          className="group relative bg-white/95 backdrop-blur-xl border border-brand-border/80 hover:border-brand-blue/50 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(20,39,68,0.08)] hover:shadow-[0_30px_70px_rgba(36,91,204,0.16)] transition-all duration-300 overflow-hidden"
         >
-          {/* Subtle decorative background gradient */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-brand-blue/[0.04] via-transparent to-transparent pointer-events-none rounded-tr-3xl" />
+          {/* Interactive Glare / Specular Sheen on Hover */}
+          {isHovered && (
+            <div
+              className="absolute inset-0 pointer-events-none z-30 transition-opacity duration-300"
+              style={{
+                background: `radial-gradient(circle 400px at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%)`,
+              }}
+            />
+          )}
 
           {/* Browser-style Top Bar */}
-          <div className="bg-brand-bg-alt/90 border-b border-brand-border/70 px-4 sm:px-6 py-3 flex items-center justify-between gap-4 text-xs">
+          <div className="bg-brand-bg-alt/90 border-b border-brand-border/70 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 text-xs relative z-20">
             {/* Left: Window Controls + Project Number */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -121,152 +131,94 @@ const ProjectStackCard: React.FC<ProjectStackCardProps> = ({
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
               </div>
-              <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-brand-border/80">
+              <div className="flex items-center gap-1.5 pl-2 border-l border-brand-border/80">
                 <span className="font-mono font-bold text-[11px] text-brand-navy">
                   0{index + 1}
                 </span>
-                <span className="text-slate-300">/</span>
+                <span className="text-slate-300 text-[10px]">/</span>
                 <span className="font-mono text-[11px] text-brand-slate">0{total}</span>
               </div>
             </div>
 
-            {/* Center: Domain Pill */}
+            {/* Center: Domain Pill with external link */}
             <a
               href={project.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-brand-border/70 hover:border-brand-blue/50 text-[11px] sm:text-xs font-mono text-brand-navy transition-colors truncate max-w-[220px] sm:max-w-xs shadow-2xs group/link"
-              title={`Open ${cleanDomain} in new tab`}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-brand-border/70 hover:border-brand-blue/50 text-[11px] sm:text-xs font-mono text-brand-navy transition-colors truncate max-w-[200px] sm:max-w-xs shadow-2xs group/link"
+              title={`Open live site: ${cleanDomain}`}
             >
               <Lock className="w-3 h-3 text-emerald-600 shrink-0" />
               <span className="truncate">{cleanDomain}</span>
               <ArrowUpRight className="w-3 h-3 text-brand-slate group-hover/link:text-brand-blue shrink-0 transition-transform group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
             </a>
 
-            {/* Right: Category Badge & Status */}
+            {/* Right: Live Production Pill */}
             <div className="flex items-center gap-2">
-              <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+              <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 sm:px-2.5 py-0.5 rounded-full border border-emerald-200/60">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Production
-              </span>
-              <span className="text-[11px] font-semibold text-brand-blue bg-brand-blue-light px-2.5 py-0.5 rounded-full border border-brand-blue/15 truncate max-w-[140px] sm:max-w-none">
-                {project.category}
+                <span className="hidden sm:inline">Live Production</span>
+                <span className="sm:hidden">Live</span>
               </span>
             </div>
           </div>
 
-          {/* Card Main Body */}
-          <div className="p-5 sm:p-7 lg:p-9 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-            {/* Left Column (Desktop) / Bottom Column (Mobile): Project Overview */}
-            <div className="order-2 lg:order-1 lg:col-span-5 flex flex-col justify-between">
-              <div>
-                {/* Eyebrow Tagline */}
-                {project.tagline && (
-                  <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-brand-blue mb-1.5">
-                    {project.tagline}
-                  </p>
-                )}
+          {/* Main Visual Thumbnail Area: Focused, High-Impact Screenshot */}
+          <div className="relative aspect-[16/10] sm:aspect-[16/9] md:aspect-[2/1] lg:aspect-[2.2/1] bg-slate-900/5 overflow-hidden group/thumb">
+            <img
+              src={project.imageSrc}
+              alt={`${project.name} live preview`}
+              width="1200"
+              height="600"
+              loading="lazy"
+              className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover/thumb:scale-104"
+            />
 
-                {/* Project Title */}
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-brand-navy tracking-tight leading-tight mb-2 sm:mb-3">
-                  {project.name}
-                </h3>
+            {/* Subtle glass lighting overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/5 pointer-events-none" />
 
-                {/* Concise Summary */}
-                <p className="text-xs sm:text-sm lg:text-base text-brand-slate leading-relaxed mb-4 sm:mb-5">
-                  {project.shortSummary}
-                </p>
+            {/* Clickable Hover Overlay to View Details */}
+            <Link
+              to={`/work?project=${project.id}`}
+              className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-200 bg-brand-navy/25 backdrop-blur-[2px]"
+              title={`View ${project.name} details on Our Work page`}
+            >
+              <span className="px-5 py-2.5 rounded-xl bg-white/95 text-brand-navy text-xs sm:text-sm font-bold shadow-xl flex items-center gap-2 transform translate-y-2 group-hover/thumb:translate-y-0 transition-transform duration-200 hover:bg-white hover:text-brand-blue">
+                <span>View Details on Our Work Page</span>
+                <ArrowRight className="w-4 h-4 text-brand-blue" />
+              </span>
+            </Link>
+          </div>
 
-                {/* Highlights / Verified Features */}
-                <div className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6">
-                  {project.verifiedDetails.slice(0, 2).map((detail, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-brand-navy">
-                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-blue shrink-0 mt-0.5" />
-                      <span>{detail}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Tech Stack Pills */}
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-                  {project.techStack.map((tech, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-brand-navy bg-brand-bg-alt rounded-md border border-brand-border/80"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 border-t border-brand-border/60">
-                <a
-                  href={project.liveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-brand-blue hover:bg-brand-blue-hover text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 group/btn"
-                >
-                  <span>Visit Live Website</span>
-                  <ExternalLink className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => onOpenDetails(project)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white hover:bg-brand-bg-alt text-brand-navy text-xs sm:text-sm font-medium border border-brand-border hover:border-brand-blue/30 shadow-2xs transition-colors"
-                >
-                  <Info className="w-3.5 h-3.5 text-brand-slate" />
-                  <span>Inspect Scope</span>
-                </button>
-              </div>
+          {/* Simple, Professional Bottom Bar: ONLY Title, Category, and Small View Details CTA */}
+          <div className="p-4 sm:p-5 lg:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white relative z-20 border-t border-brand-border/60">
+            <div>
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-brand-blue">
+                {project.category}
+              </span>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-brand-navy tracking-tight mt-0.5">
+                {project.name}
+              </h3>
             </div>
 
-            {/* Right Column (Desktop) / Top Column (Mobile): Screenshot Window Preview */}
-            <div className="order-1 lg:order-2 lg:col-span-7">
+            {/* Small Sleek View Details CTA Button */}
+            <div className="flex items-center gap-2.5 pt-1 sm:pt-0">
+              <Link
+                to={`/work?project=${project.id}`}
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-brand-blue hover:bg-brand-blue-hover text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group/btn"
+              >
+                <span>View Details</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+              </Link>
+
               <a
                 href={project.liveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block relative rounded-xl sm:rounded-2xl overflow-hidden border border-brand-border/80 bg-brand-bg-alt shadow-inner group/preview focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2"
-                title={`Visit ${project.name}`}
+                className="inline-flex items-center justify-center p-2 sm:p-2.5 rounded-lg bg-brand-bg-alt hover:bg-brand-blue-light text-brand-slate hover:text-brand-blue border border-brand-border/80 transition-colors"
+                title={`Visit ${project.name} live`}
               >
-                {/* Browser top sub-bar */}
-                <div className="bg-slate-100/90 border-b border-brand-border/70 px-3 py-1.5 flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />
-                  </div>
-                  <span className="font-mono text-[10px] text-brand-slate/80 truncate">
-                    {cleanDomain}
-                  </span>
-                  <ExternalLink className="w-3 h-3 text-brand-slate/60" />
-                </div>
-
-                {/* Screenshot Image with hover zoom */}
-                <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
-                  <img
-                    src={project.imageSrc}
-                    alt={`${project.name} live preview`}
-                    width="800"
-                    height="500"
-                    loading="lazy"
-                    className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover/preview:scale-105"
-                  />
-
-                  {/* Subtle glass reflection gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 pointer-events-none" />
-
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-brand-navy/30 backdrop-blur-[1px] opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                    <span className="px-4 py-2 rounded-lg bg-white/95 text-brand-navy text-xs font-bold shadow-lg flex items-center gap-2 transform translate-y-2 group-hover/preview:translate-y-0 transition-transform duration-200">
-                      <span>Open Live Website</span>
-                      <ExternalLink className="w-3.5 h-3.5 text-brand-blue" />
-                    </span>
-                  </div>
-                </div>
+                <ExternalLink className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -300,8 +252,8 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -4;
-    const rotateY = ((x - centerX) / centerX) * 4;
+    const rotateX = ((y - centerY) / centerY) * -3.5;
+    const rotateY = ((x - centerX) / centerX) * 3.5;
     setTilt({ rotateX, rotateY });
   };
 
@@ -335,7 +287,7 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
         <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Bar */}
-        <div className="bg-white/[0.04] border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-4 text-xs">
+        <div className="bg-white/[0.04] border-b border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400/80" />
@@ -361,46 +313,30 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
           </div>
         </div>
 
-        {/* Card Main Body */}
-        <div className="p-6 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+        {/* Main Body */}
+        <div className="p-5 sm:p-7 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
           {/* Left Column: Heading & CTA */}
-          <div className="lg:col-span-6 flex flex-col justify-between">
+          <div className="lg:col-span-5 flex flex-col justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-2.5">
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Selected Portfolio Archive</span>
               </div>
 
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight mb-4">
-                Want to Explore More of What We&apos;ve Built?
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight mb-2.5">
+                Explore All Our Works
               </h3>
 
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-6">
-                From fine jewellery showrooms and strength fitness portals to restaurant culinary menus and interactive 3D web applications, explore our full track record of delivered solutions.
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+                From fine jewellery showrooms and fitness clubs to culinary dining platforms and creative 3D web applications, explore our full portfolio of delivered solutions.
               </p>
-
-              {/* Highlights */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
-                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.05] border border-white/10 text-center sm:text-left">
-                  <div className="text-lg sm:text-xl font-extrabold text-cyan-300">7+</div>
-                  <div className="text-[10px] sm:text-[11px] text-slate-300 mt-0.5">Delivered</div>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.05] border border-white/10 text-center sm:text-left">
-                  <div className="text-lg sm:text-xl font-extrabold text-cyan-300">100%</div>
-                  <div className="text-[10px] sm:text-[11px] text-slate-300 mt-0.5">Verified</div>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.05] border border-white/10 text-center sm:text-left">
-                  <div className="text-lg sm:text-xl font-extrabold text-cyan-300">Live</div>
-                  <div className="text-[10px] sm:text-[11px] text-slate-300 mt-0.5">Production</div>
-                </div>
-              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3">
               <Link
                 to="/work"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-brand-blue hover:bg-brand-blue-hover text-white text-sm font-bold shadow-lg shadow-brand-blue/40 hover:shadow-brand-blue/60 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group/btn"
+                className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-brand-blue hover:bg-brand-blue-hover text-white text-xs sm:text-sm font-bold shadow-lg shadow-brand-blue/40 hover:shadow-brand-blue/60 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group/btn"
               >
                 <span>View All Projects</span>
                 <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
@@ -408,7 +344,7 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
 
               <Link
                 to="/contact"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-medium border border-white/20 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs sm:text-sm font-medium border border-white/20 transition-colors"
               >
                 <span>Discuss Your Project</span>
               </Link>
@@ -416,15 +352,16 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
           </div>
 
           {/* Right Column: 2x2 Mini Archive Mosaic */}
-          <div className="lg:col-span-6">
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="lg:col-span-7">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
               {archiveProjects.map((p) => (
                 <Link
                   key={p.id}
-                  to="/work"
-                  className="group/mini relative rounded-xl overflow-hidden bg-white/[0.06] border border-white/10 hover:border-cyan-400/40 transition-all duration-300 hover:shadow-lg p-2.5 flex flex-col"
+                  to={`/work?project=${p.id}`}
+                  className="group/mini relative rounded-xl overflow-hidden bg-white/[0.06] border border-white/10 hover:border-cyan-400/40 transition-all duration-300 hover:shadow-lg p-2 sm:p-2.5 flex flex-col"
+                  title={`View ${p.name} on Our Work page`}
                 >
-                  <div className="relative aspect-[16/10] rounded-lg overflow-hidden bg-slate-900/60 mb-2.5">
+                  <div className="relative aspect-[16/10] rounded-lg overflow-hidden bg-slate-900/60 mb-2">
                     {p.imageSrc ? (
                       <img
                         src={p.imageSrc}
@@ -440,29 +377,19 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <span className="absolute bottom-1.5 left-2 text-[10px] font-semibold text-cyan-300 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs">
+                    <span className="absolute bottom-1.5 left-2 text-[9px] sm:text-[10px] font-semibold text-cyan-300 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-xs">
                       {p.category.split('&')[0]}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-white truncate group-hover/mini:text-cyan-300 transition-colors">
+                    <span className="text-[11px] sm:text-xs font-bold text-white truncate group-hover/mini:text-cyan-300 transition-colors">
                       {p.name}
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/mini:text-cyan-300 group-hover/mini:translate-x-0.5 transition-all shrink-0" />
                   </div>
                 </Link>
               ))}
-            </div>
-
-            <div className="mt-4 text-center">
-              <Link
-                to="/work"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-white transition-colors"
-              >
-                <span>Click any project to inspect live case studies &amp; verified scopes</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
           </div>
         </div>
@@ -472,8 +399,6 @@ const PortfolioCtaCard: React.FC<PortfolioCtaCardProps> = ({
 };
 
 export const FeaturedProjects: React.FC = () => {
-  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
-
   // Filter the exact 3 projects requested
   const featured = TARGET_PROJECT_IDS.map((id) =>
     PROJECTS_DATA.find((p) => p.id === id)
@@ -492,7 +417,7 @@ export const FeaturedProjects: React.FC = () => {
       <div className="absolute top-1/4 left-0 w-96 h-96 bg-brand-blue/[0.03] rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16">
           <div className="max-w-2xl">
@@ -504,7 +429,7 @@ export const FeaturedProjects: React.FC = () => {
               Our Works
             </h2>
             <p className="mt-3 text-base sm:text-lg text-brand-slate leading-relaxed">
-              Explore live websites and applications engineered by USolve. Each project represents practical design, responsive layouts, and reliable technology.
+              Explore live websites and applications engineered by USolve. Click any project to inspect full case details.
             </p>
           </div>
 
@@ -521,16 +446,12 @@ export const FeaturedProjects: React.FC = () => {
 
         {/* Futuristic On-Scroll Stacking Cards Container */}
         <div className="relative">
-          {/* Card 1: DiyasNduas */}
-          {/* Card 2: Surya School Bus Tracking */}
-          {/* Card 3: S.N. Olympia Fitness Gym */}
           {featured.map((project, index) => (
             <ProjectStackCard
               key={project.id}
               project={project}
               index={index}
               total={totalCards}
-              onOpenDetails={(p) => setSelectedProject(p)}
             />
           ))}
 
@@ -541,12 +462,6 @@ export const FeaturedProjects: React.FC = () => {
             archiveProjects={archiveProjects}
           />
         </div>
-
-        {/* Reusable Project Details Modal */}
-        <ProjectModal
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
       </div>
     </section>
   );

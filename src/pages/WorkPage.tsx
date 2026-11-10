@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PROJECTS_DATA } from '../data/projects';
 import { SectionHeading } from '../components/common/SectionHeading';
 import { ProjectCard } from '../components/work/ProjectCard';
@@ -10,8 +11,20 @@ import { ProjectItem } from '../types';
 import { cn } from '../utils/cn';
 
 export const WorkPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [activeFilter, setActiveFilter] = useState<'all' | 'apps' | 'fitness' | 'retail' | 'archive'>('all');
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+
+  // Auto-open project details modal if requested via URL query, e.g. /work?project=diyasnduas
+  useEffect(() => {
+    const projectId = searchParams.get('project');
+    if (projectId) {
+      const target = PROJECTS_DATA.find((p) => p.id === projectId);
+      if (target) {
+        setSelectedProject(target);
+      }
+    }
+  }, [searchParams]);
 
   const filterButtons = [
     { id: 'all', label: `All Projects (${PROJECTS_DATA.length})` },
