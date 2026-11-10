@@ -15,16 +15,19 @@ export const WorkPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'apps' | 'fitness' | 'retail' | 'archive'>('all');
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
 
-  // Auto-open project details modal if requested via URL query, e.g. /work?project=diyasnduas
+  const targetProjectId = searchParams.get('project');
+
+  // Auto-scroll to project if requested via URL query, e.g. /work?project=diyasnduas
   useEffect(() => {
-    const projectId = searchParams.get('project');
-    if (projectId) {
-      const target = PROJECTS_DATA.find((p) => p.id === projectId);
-      if (target) {
-        setSelectedProject(target);
+    if (targetProjectId) {
+      const el = document.getElementById(targetProjectId);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
       }
     }
-  }, [searchParams]);
+  }, [targetProjectId]);
 
   const filterButtons = [
     { id: 'all', label: `All Projects (${PROJECTS_DATA.length})` },
@@ -119,11 +122,13 @@ export const WorkPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onOpenDetails={(p) => setSelectedProject(p)}
-              />
+              <div key={project.id} id={project.id} className="h-full">
+                <ProjectCard
+                  project={project}
+                  defaultOpen={targetProjectId === project.id}
+                  onOpenDetails={(p) => setSelectedProject(p)}
+                />
+              </div>
             ))}
           </div>
         </div>

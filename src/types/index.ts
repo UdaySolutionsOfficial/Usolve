@@ -19,6 +19,7 @@ export interface ProjectItem {
   verifiedDetails: string[];
   techStack: string[];
   imageSrc?: string;
+  galleryImages?: string[];
   tagline?: string;
   isFeatured?: boolean;
 }
